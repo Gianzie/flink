@@ -176,9 +176,11 @@ public class CliFrontend {
             return;
         }
 
+        // tips 之前所添加的那几个命令行对象（GenericCli、YARNCli、DefaultCli），获取第一个有效的
         final CustomCommandLine activeCommandLine =
                 validateAndGetActiveCommandLine(checkNotNull(commandLine));
 
+        // tips 获取App模式的集群部署对象
         final ApplicationDeployer deployer =
                 new ApplicationClusterDeployer(clusterClientServiceLoader);
 
@@ -187,6 +189,7 @@ public class CliFrontend {
 
         // No need to set a jarFile path for Pyflink job.
         if (ProgramOptionsUtils.isPythonEntryPoint(commandLine)) {
+            // tips python环境
             programOptions = ProgramOptionsUtils.createPythonProgramOptions(commandLine);
             effectiveConfiguration =
                     getEffectiveConfiguration(
@@ -195,9 +198,12 @@ public class CliFrontend {
                             programOptions,
                             Collections.emptyList());
         } else {
+            // tips Java环境
+            // tips 解析命令行参数（用户代码入口类、sp、并行度等等）
             programOptions = new ProgramOptions(commandLine);
             programOptions.validate();
             final URI uri = PackagedProgramUtils.resolveURI(programOptions.getJarFilePath());
+            // tips 有效配置文件
             effectiveConfiguration =
                     getEffectiveConfiguration(
                             activeCommandLine,
@@ -206,9 +212,11 @@ public class CliFrontend {
                             Collections.singletonList(uri.toString()));
         }
 
+        // tips app模式配置文件（程序参数、用户代码入口类）
         final ApplicationConfiguration applicationConfiguration =
                 new ApplicationConfiguration(
                         programOptions.getProgramArgs(), programOptions.getEntryPointClassName());
+        // tips 部署对象开始运行
         deployer.run(effectiveConfiguration, applicationConfiguration);
     }
 
@@ -1095,6 +1103,7 @@ public class CliFrontend {
                     run(params);
                     return 0;
                 case ACTION_RUN_APPLICATION:
+                    // tips flink run-application模式
                     runApplication(params);
                     return 0;
                 case ACTION_LIST:

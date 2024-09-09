@@ -70,11 +70,13 @@ public class ProgramOptions extends CommandLineOptions {
     protected ProgramOptions(CommandLine line) throws CliArgsException {
         super(line);
 
+        // tips 用户代码main()入口类
         this.entryPointClass =
                 line.hasOption(CLASS_OPTION.getOpt())
                         ? line.getOptionValue(CLASS_OPTION.getOpt())
                         : null;
 
+        // tips 用户代码jar包
         this.jarFilePath =
                 line.hasOption(JAR_OPTION.getOpt())
                         ? line.getOptionValue(JAR_OPTION.getOpt())
@@ -94,6 +96,7 @@ public class ProgramOptions extends CommandLineOptions {
         }
         this.classpaths = classpaths;
 
+        // tips 命令行中的parallelism信息
         if (line.hasOption(PARALLELISM_OPTION.getOpt())) {
             hasParallelismOpt = true;
             String parString = line.getOptionValue(PARALLELISM_OPTION.getOpt());
@@ -108,14 +111,17 @@ public class ProgramOptions extends CommandLineOptions {
             }
         } else {
             hasParallelismOpt = false;
+            // tips 没有指定parallelism的话，默认使用CPU核心数
             parallelism = ExecutionConfig.PARALLELISM_DEFAULT;
         }
 
+        // tips 是否分离模式
         detachedMode =
                 line.hasOption(DETACHED_OPTION.getOpt())
                         || line.hasOption(YARN_DETACHED_OPTION.getOpt());
         shutdownOnAttachedExit = line.hasOption(SHUTDOWN_IF_ATTACHED_OPTION.getOpt());
 
+        // tips 命令行中是否有savepoint配置
         this.savepointSettings = CliFrontendParser.createSavepointRestoreSettings(line);
     }
 
