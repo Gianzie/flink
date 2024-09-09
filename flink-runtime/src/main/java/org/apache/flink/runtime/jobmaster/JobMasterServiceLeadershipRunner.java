@@ -247,6 +247,7 @@ public class JobMasterServiceLeadershipRunner implements JobManagerRunner, Leade
     @Override
     public void grantLeadership(UUID leaderSessionID) {
         runIfStateRunning(
+                // tips enter
                 () -> startJobMasterServiceProcessAsync(leaderSessionID),
                 "starting a new JobMasterServiceProcess");
     }
@@ -260,6 +261,7 @@ public class JobMasterServiceLeadershipRunner implements JobManagerRunner, Leade
                                         leaderSessionId,
                                         ThrowingRunnable.unchecked(
                                                 () ->
+                                                        // tips 校验作业调度状态并创建JobMaster服务进程
                                                         verifyJobSchedulingStatusAndCreateJobMasterServiceProcess(
                                                                 leaderSessionId)),
                                         "verify job scheduling status and create JobMasterServiceProcess"));
@@ -274,6 +276,7 @@ public class JobMasterServiceLeadershipRunner implements JobManagerRunner, Leade
             if (jobResultStore.hasJobResultEntry(getJobID())) {
                 jobAlreadyDone(leaderSessionId);
             } else {
+                // tips submit走这里
                 createNewJobMasterServiceProcess(leaderSessionId);
             }
         } catch (IOException e) {
@@ -314,6 +317,7 @@ public class JobMasterServiceLeadershipRunner implements JobManagerRunner, Leade
                 leaderSessionId,
                 JobMasterServiceProcess.class.getSimpleName());
 
+        // tips 创建JobMaster服务进程对象，负责运行JobMasterService
         jobMasterServiceProcess = jobMasterServiceProcessFactory.create(leaderSessionId);
 
         forwardIfValidLeader(
@@ -398,8 +402,8 @@ public class JobMasterServiceLeadershipRunner implements JobManagerRunner, Leade
                 sequentialOperation.thenCompose(
                         ignored ->
                                 callIfRunning(
-                                                this::stopJobMasterServiceProcess,
-                                                "stop leading JobMasterServiceProcess")
+                                        this::stopJobMasterServiceProcess,
+                                        "stop leading JobMasterServiceProcess")
                                         .orElse(FutureUtils.completedVoidFuture()));
 
         handleAsyncOperationError(sequentialOperation, "Could not suspend the job manager.");

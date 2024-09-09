@@ -400,7 +400,7 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
     }
 
     private HeartbeatManager<TaskExecutorToJobManagerHeartbeatPayload, AllocatedSlotReport>
-            createTaskManagerHeartbeatManager(HeartbeatServices heartbeatServices) {
+    createTaskManagerHeartbeatManager(HeartbeatServices heartbeatServices) {
         return heartbeatServices.createHeartbeatManagerSender(
                 resourceId, new TaskManagerHeartbeatListener(), getMainThreadExecutor(), log);
     }
@@ -421,6 +421,7 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
     @Override
     protected void onStart() throws JobMasterException {
         try {
+            // tips
             startJobExecution();
         } catch (Exception e) {
             final JobMasterException jobMasterException =
@@ -440,10 +441,10 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
 
         // make sure there is a graceful exit
         return stopJobExecution(
-                        new FlinkException(
-                                String.format(
-                                        "Stopping JobMaster for job '%s' (%s).",
-                                        jobGraph.getName(), jobGraph.getJobID())))
+                new FlinkException(
+                        String.format(
+                                "Stopping JobMaster for job '%s' (%s).",
+                                jobGraph.getName(), jobGraph.getJobID())))
                 .exceptionally(
                         exception -> {
                             throw new CompletionException(
@@ -945,11 +946,13 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
     // -----------------------------------------------------------------
 
     private void startJobExecution() throws Exception {
+        // tips 校验是否运行在主线程
         validateRunsInMainThread();
 
         JobShuffleContext context = new JobShuffleContextImpl(jobGraph.getJobID(), this);
         shuffleMaster.registerJob(context);
 
+        // tips 启动JobMaster
         startJobMasterServices();
 
         log.info(
@@ -1169,7 +1172,7 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
         // verify the response with current connection
         if (resourceManagerConnection != null
                 && Objects.equals(
-                        resourceManagerConnection.getTargetLeaderId(), resourceManagerId)) {
+                resourceManagerConnection.getTargetLeaderId(), resourceManagerId)) {
 
             log.info(
                     "JobManager successfully registered at ResourceManager, leader id: {}.",
@@ -1307,10 +1310,10 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
 
     private class ResourceManagerConnection
             extends RegisteredRpcConnection<
-                    ResourceManagerId,
-                    ResourceManagerGateway,
-                    JobMasterRegistrationSuccess,
-                    RegistrationResponse.Rejection> {
+            ResourceManagerId,
+            ResourceManagerGateway,
+            JobMasterRegistrationSuccess,
+            RegistrationResponse.Rejection> {
         private final JobID jobID;
 
         private final ResourceID jobManagerResourceID;
@@ -1337,11 +1340,11 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
 
         @Override
         protected RetryingRegistration<
-                        ResourceManagerId,
-                        ResourceManagerGateway,
-                        JobMasterRegistrationSuccess,
-                        RegistrationResponse.Rejection>
-                generateRegistration() {
+                ResourceManagerId,
+                ResourceManagerGateway,
+                JobMasterRegistrationSuccess,
+                RegistrationResponse.Rejection>
+        generateRegistration() {
             return new RetryingRegistration<
                     ResourceManagerId,
                     ResourceManagerGateway,
@@ -1420,7 +1423,7 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
 
     private class TaskManagerHeartbeatListener
             implements HeartbeatListener<
-                    TaskExecutorToJobManagerHeartbeatPayload, AllocatedSlotReport> {
+            TaskExecutorToJobManagerHeartbeatPayload, AllocatedSlotReport> {
 
         @Override
         public void notifyHeartbeatTimeout(ResourceID resourceID) {
@@ -1487,8 +1490,8 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
             validateRunsInMainThread();
             if (establishedResourceManagerConnection != null
                     && establishedResourceManagerConnection
-                            .getResourceManagerResourceID()
-                            .equals(resourceId)) {
+                    .getResourceManagerResourceID()
+                    .equals(resourceId)) {
                 reconnectToResourceManager(cause);
             }
         }

@@ -89,6 +89,7 @@ public class DefaultJobMasterServiceProcess
         this.jobId = jobId;
         this.leaderSessionId = leaderSessionId;
         this.jobMasterServiceFuture =
+                // tips 创建JobMasterService
                 jobMasterServiceFactory.createJobMasterService(leaderSessionId, this);
 
         jobMasterServiceFuture.whenComplete(
