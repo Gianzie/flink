@@ -64,6 +64,7 @@ public final class YarnApplicationClusterEntryPoint extends ApplicationClusterEn
 
     public static void main(final String[] args) {
         // startup checks and logging
+        // tips 打印环境信息
         EnvironmentInformation.logEnvironmentInfo(
                 LOG, YarnApplicationClusterEntryPoint.class.getSimpleName(), args);
         SignalHandler.register(LOG);
@@ -83,6 +84,7 @@ public final class YarnApplicationClusterEntryPoint extends ApplicationClusterEn
             LOG.warn("Could not log YARN environment information.", e);
         }
 
+        // tips 和client刚启动一样，又走了一遍解析参数
         final Configuration dynamicParameters =
                 ClusterEntrypointUtils.parseParametersOrExit(
                         args,
@@ -93,6 +95,7 @@ public final class YarnApplicationClusterEntryPoint extends ApplicationClusterEn
 
         PackagedProgram program = null;
         try {
+            // tips 将写好的flink程序封装起来（包括jar文件、用户代码入口类、Savepoint恢复设置、参数）
             program = getPackagedProgram(configuration);
         } catch (Exception e) {
             LOG.error("Could not create application program.", e);
@@ -109,6 +112,7 @@ public final class YarnApplicationClusterEntryPoint extends ApplicationClusterEn
         YarnApplicationClusterEntryPoint yarnApplicationClusterEntrypoint =
                 new YarnApplicationClusterEntryPoint(configuration, program);
 
+        // tips enter
         ClusterEntrypoint.runClusterEntrypoint(yarnApplicationClusterEntrypoint);
     }
 

@@ -229,6 +229,7 @@ public abstract class ClusterEntrypoint implements AutoCloseableAsync, FatalErro
             securityContext.runSecured(
                     (Callable<Void>)
                             () -> {
+                                // tips enter
                                 runCluster(configuration, pluginManager);
 
                                 return null;
@@ -240,10 +241,10 @@ public abstract class ClusterEntrypoint implements AutoCloseableAsync, FatalErro
             try {
                 // clean up any partial state
                 shutDownAsync(
-                                ApplicationStatus.FAILED,
-                                ShutdownBehaviour.GRACEFUL_SHUTDOWN,
-                                ExceptionUtils.stringifyException(strippedThrowable),
-                                false)
+                        ApplicationStatus.FAILED,
+                        ShutdownBehaviour.GRACEFUL_SHUTDOWN,
+                        ExceptionUtils.stringifyException(strippedThrowable),
+                        false)
                         .get(
                                 INITIALIZATION_SHUTDOWN_TIMEOUT.toMilliseconds(),
                                 TimeUnit.MILLISECONDS);
@@ -279,17 +280,20 @@ public abstract class ClusterEntrypoint implements AutoCloseableAsync, FatalErro
     private void runCluster(Configuration configuration, PluginManager pluginManager)
             throws Exception {
         synchronized (lock) {
+            // tips 初始化集群所需的各种服务（RPC、Blob存储、heartbeat对象、metric注册对象、executionGraph存储对象）
             initializeServices(configuration, pluginManager);
 
             // write host information into configuration
             configuration.setString(JobManagerOptions.ADDRESS, commonRpcService.getAddress());
             configuration.setInteger(JobManagerOptions.PORT, commonRpcService.getPort());
 
+            // tips 创建一个整合了 dispatcher、yarnResourceManager、RESTAPI对象的工厂类对象，用于后续启动组件
             final DispatcherResourceManagerComponentFactory
                     dispatcherResourceManagerComponentFactory =
-                            createDispatcherResourceManagerComponentFactory(configuration);
+                    createDispatcherResourceManagerComponentFactory(configuration);
 
             clusterComponent =
+                    // tips 通过上面initializeServices()初始化的各个对象来启动Dispatcher、ResourceManager、JobMaster等JobManager下的核心组件
                     dispatcherResourceManagerComponentFactory.create(
                             configuration,
                             resourceId.unwrap(),
@@ -466,10 +470,10 @@ public abstract class ClusterEntrypoint implements AutoCloseableAsync, FatalErro
         ShutdownHookUtil.removeShutdownHook(shutDownHook, getClass().getSimpleName(), LOG);
 
         return shutDownAsync(
-                        ApplicationStatus.UNKNOWN,
-                        ShutdownBehaviour.PROCESS_FAILURE,
-                        "Cluster entrypoint has been closed externally.",
-                        false)
+                ApplicationStatus.UNKNOWN,
+                ShutdownBehaviour.PROCESS_FAILURE,
+                "Cluster entrypoint has been closed externally.",
+                false)
                 .thenAccept(ignored -> {});
     }
 
@@ -677,8 +681,8 @@ public abstract class ClusterEntrypoint implements AutoCloseableAsync, FatalErro
     // --------------------------------------------------
 
     protected abstract DispatcherResourceManagerComponentFactory
-            createDispatcherResourceManagerComponentFactory(Configuration configuration)
-                    throws IOException;
+    createDispatcherResourceManagerComponentFactory(Configuration configuration)
+            throws IOException;
 
     protected abstract ExecutionGraphInfoStore createSerializableExecutionGraphStore(
             Configuration configuration, ScheduledExecutor scheduledExecutor) throws IOException;
@@ -729,6 +733,7 @@ public abstract class ClusterEntrypoint implements AutoCloseableAsync, FatalErro
 
         final String clusterEntrypointName = clusterEntrypoint.getClass().getSimpleName();
         try {
+            // tips enter
             clusterEntrypoint.startCluster();
         } catch (ClusterEntrypointException e) {
             LOG.error(
