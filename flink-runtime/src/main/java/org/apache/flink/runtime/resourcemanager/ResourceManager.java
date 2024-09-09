@@ -249,6 +249,7 @@ public abstract class ResourceManager<WorkerType extends ResourceIDRetrievable>
     public final void onStart() throws Exception {
         try {
             log.info("Starting the resource manager.");
+            // tips RPC回调启动RM服务
             startResourceManagerServices();
             startedFuture.complete(null);
         } catch (Throwable t) {
@@ -265,10 +266,13 @@ public abstract class ResourceManager<WorkerType extends ResourceIDRetrievable>
         try {
             jobLeaderIdService.start(new JobLeaderIdActionsImpl());
 
+            // tips 注册指标
             registerMetrics();
 
+            // tips 监听 TM&JM 心跳
             startHeartbeatServices();
 
+            // tips 启动SlotManager
             slotManager.start(
                     getFencingToken(),
                     getMainThreadExecutor(),
@@ -278,6 +282,7 @@ public abstract class ResourceManager<WorkerType extends ResourceIDRetrievable>
 
             delegationTokenManager.start(this);
 
+            // tips 初始化（创建了YARN的RMClient申请资源，NMClient来启动TaskExecutor）
             initialize();
         } catch (Exception e) {
             handleStartResourceManagerServicesException(e);

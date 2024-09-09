@@ -161,6 +161,7 @@ public abstract class ResourceManagerFactory<T extends ResourceIDRetrievable> {
             HighAvailabilityServices highAvailabilityServices,
             SlotManagerMetricGroup slotManagerMetricGroup) {
 
+        // tips 这一步创建了SlotManager
         return ResourceManagerRuntimeServices.fromConfiguration(
                 rmRuntimeServicesConfig,
                 highAvailabilityServices,

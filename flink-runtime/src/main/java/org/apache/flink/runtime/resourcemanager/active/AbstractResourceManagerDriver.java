@@ -89,6 +89,7 @@ public abstract class AbstractResourceManagerDriver<WorkerType extends ResourceI
         this.ioExecutor = Preconditions.checkNotNull(ioExecutor);
         this.blockedNodeRetriever = Preconditions.checkNotNull(blockedNodeRetriever);
 
+        // tips enter
         initializeInternal();
     }
 

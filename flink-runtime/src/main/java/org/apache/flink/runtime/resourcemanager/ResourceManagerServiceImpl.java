@@ -118,6 +118,7 @@ public class ResourceManagerServiceImpl implements ResourceManagerService, Leade
 
         LOG.info("Starting resource manager service.");
 
+        // tips enter
         leaderElectionService.start(this);
     }
 
@@ -201,6 +202,7 @@ public class ResourceManagerServiceImpl implements ResourceManagerService, Leade
                                 newLeaderSessionID);
 
                         try {
+                            // tips enter
                             startNewLeaderResourceManager(newLeaderSessionID);
                         } catch (Throwable t) {
                             fatalErrorHandler.onFatalError(
@@ -248,10 +250,12 @@ public class ResourceManagerServiceImpl implements ResourceManagerService, Leade
 
     @GuardedBy("lock")
     private void startNewLeaderResourceManager(UUID newLeaderSessionID) throws Exception {
+        // tips 和 dispatcher 一样，启动前先停掉旧的
         stopLeaderResourceManager();
 
         this.leaderSessionID = newLeaderSessionID;
         this.leaderResourceManager =
+                // tips 创建RM
                 resourceManagerFactory.createResourceManager(rmProcessContext, newLeaderSessionID);
 
         final ResourceManager<?> newLeaderResourceManager = this.leaderResourceManager;
@@ -260,6 +264,7 @@ public class ResourceManagerServiceImpl implements ResourceManagerService, Leade
                 .thenComposeAsync(
                         (ignore) -> {
                             synchronized (lock) {
+                                // tips enter
                                 return startResourceManagerIfIsLeader(newLeaderResourceManager);
                             }
                         },
@@ -282,6 +287,7 @@ public class ResourceManagerServiceImpl implements ResourceManagerService, Leade
     private CompletableFuture<Boolean> startResourceManagerIfIsLeader(
             ResourceManager<?> resourceManager) {
         if (isLeader(resourceManager)) {
+            // tips 判断是否为leader，start
             resourceManager.start();
             forwardTerminationFuture(resourceManager);
             return resourceManager.getStartedFuture().thenApply(ignore -> true);

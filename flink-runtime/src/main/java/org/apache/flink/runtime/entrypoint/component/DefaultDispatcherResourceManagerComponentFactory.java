@@ -184,7 +184,7 @@ public class DefaultDispatcherResourceManagerComponentFactory
 
             final String hostname = RpcUtils.getHostname(rpcService);
 
-            // tips flink RM服务对象
+            // tips flink RM在Dispatcher和JobMaster之前初始化，但在它们之后启动
             resourceManagerService =
                     ResourceManagerServiceImpl.create(
                             resourceManagerFactory,
@@ -241,6 +241,9 @@ public class DefaultDispatcherResourceManagerComponentFactory
                             partialDispatcherServices);
 
             log.debug("Starting ResourceManagerService.");
+            // tips flink RM启动（为什么不在创建完之后就启动？）
+            //  创建并启动了SlotManager
+            //  初始化了YARN的RMClient来申请资源、NMClient来启动TaskExecutor
             resourceManagerService.start();
 
             resourceManagerRetrievalService.start(resourceManagerGatewayRetriever);

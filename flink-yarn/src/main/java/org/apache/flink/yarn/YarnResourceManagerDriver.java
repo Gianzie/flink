@@ -180,14 +180,17 @@ public class YarnResourceManagerDriver extends AbstractResourceManagerDriver<Yar
         isRunning = true;
         final YarnContainerEventHandler yarnContainerEventHandler = new YarnContainerEventHandler();
         try {
+            // tips flink创建YARNRMClient来和YARNRM交互申请资源（这里变量改个名字感觉更好）
             resourceManagerClient =
                     yarnResourceManagerClientFactory.createResourceManagerClient(
                             yarnHeartbeatIntervalMillis, yarnContainerEventHandler);
             resourceManagerClient.init(yarnConfig);
             resourceManagerClient.start();
 
+            // tips 注册AM到YARN
             final RegisterApplicationMasterResponse registerApplicationMasterResponse =
                     registerApplicationMaster();
+            // tips 从之前的尝试中获取容器，比如一些停掉的作业但容器还未被释放
             getContainersFromPreviousAttempts(registerApplicationMasterResponse);
             taskExecutorProcessSpecContainerResourcePriorityAdapter =
                     new TaskExecutorProcessSpecContainerResourcePriorityAdapter(
@@ -199,6 +202,7 @@ public class YarnResourceManagerDriver extends AbstractResourceManagerDriver<Yar
             throw new ResourceManagerException("Could not start resource manager client.", e);
         }
 
+        // tips flink创建YARNNMClient来和YARNNM交互启动TaskExecutor
         nodeManagerClient =
                 yarnNodeManagerClientFactory.createNodeManagerClient(yarnContainerEventHandler);
         nodeManagerClient.init(yarnConfig);
