@@ -50,6 +50,7 @@ public class DefaultDispatcherRunnerFactory implements DispatcherRunnerFactory {
             PartialDispatcherServices partialDispatcherServices)
             throws Exception {
 
+        // tips 创建dispatcherLeaderProcessFactory
         final DispatcherLeaderProcessFactory dispatcherLeaderProcessFactory =
                 dispatcherLeaderProcessFactoryFactory.createFactory(
                         jobPersistenceComponentFactory,
@@ -58,6 +59,7 @@ public class DefaultDispatcherRunnerFactory implements DispatcherRunnerFactory {
                         partialDispatcherServices,
                         fatalErrorHandler);
 
+        // tips enter
         return DefaultDispatcherRunner.create(
                 leaderElectionService, fatalErrorHandler, dispatcherLeaderProcessFactory);
     }

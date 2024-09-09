@@ -75,6 +75,7 @@ public final class DefaultDispatcherRunner implements DispatcherRunner, LeaderCo
     }
 
     void start() throws Exception {
+        // tips enter（这里看非高可用的实现）
         leaderElectionService.start(this);
     }
 
@@ -116,18 +117,22 @@ public final class DefaultDispatcherRunner implements DispatcherRunner, LeaderCo
                             getClass().getSimpleName(),
                             leaderSessionID,
                             DispatcherLeaderProcess.class.getSimpleName());
+                    // tips enter
                     startNewDispatcherLeaderProcess(leaderSessionID);
                 });
     }
 
     private void startNewDispatcherLeaderProcess(UUID leaderSessionID) {
+        // tips 启动前先关闭（如果有的话）
         stopDispatcherLeaderProcess();
 
+        // tips 创建新的dispatcherLeaderProcess
         dispatcherLeaderProcess = createNewDispatcherLeaderProcess(leaderSessionID);
 
         final DispatcherLeaderProcess newDispatcherLeaderProcess = dispatcherLeaderProcess;
         FutureUtils.assertNoException(
                 previousDispatcherLeaderProcessTerminationFuture.thenRun(
+                        // tips enter
                         newDispatcherLeaderProcess::start));
     }
 
@@ -160,7 +165,7 @@ public final class DefaultDispatcherRunner implements DispatcherRunner, LeaderCo
                                 // valid
                                 if (running
                                         && this.dispatcherLeaderProcess
-                                                == newDispatcherLeaderProcess) {
+                                        == newDispatcherLeaderProcess) {
                                     if (throwable != null) {
                                         shutDownFuture.completeExceptionally(throwable);
                                     } else {
@@ -238,6 +243,7 @@ public final class DefaultDispatcherRunner implements DispatcherRunner, LeaderCo
         final DefaultDispatcherRunner dispatcherRunner =
                 new DefaultDispatcherRunner(
                         leaderElectionService, fatalErrorHandler, dispatcherLeaderProcessFactory);
+        // tips start dispatcher
         dispatcherRunner.start();
         return dispatcherRunner;
     }

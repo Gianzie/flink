@@ -123,12 +123,14 @@ public class DefaultDispatcherResourceManagerComponentFactory
         DispatcherRunner dispatcherRunner = null;
 
         try {
+            // tips xxxLeaderRetrievalService都是高可用相关的对象
             dispatcherLeaderRetrievalService =
                     highAvailabilityServices.getDispatcherLeaderRetriever();
 
             resourceManagerRetrievalService =
                     highAvailabilityServices.getResourceManagerLeaderRetriever();
 
+            // tips dispatcher网关检索器
             final LeaderGatewayRetriever<DispatcherGateway> dispatcherGatewayRetriever =
                     new RpcGatewayRetriever<>(
                             rpcService,
@@ -137,6 +139,7 @@ public class DefaultDispatcherResourceManagerComponentFactory
                             new ExponentialBackoffRetryStrategy(
                                     12, Duration.ofMillis(10), Duration.ofMillis(50)));
 
+            // tips ResourceManager网关检索器
             final LeaderGatewayRetriever<ResourceManagerGateway> resourceManagerGatewayRetriever =
                     new RpcGatewayRetriever<>(
                             rpcService,
@@ -145,6 +148,7 @@ public class DefaultDispatcherResourceManagerComponentFactory
                             new ExponentialBackoffRetryStrategy(
                                     12, Duration.ofMillis(10), Duration.ofMillis(50)));
 
+            // tips 调度执行器对象（Java的）
             final ScheduledExecutorService executor =
                     WebMonitorEndpoint.createExecutorService(
                             configuration.getInteger(RestOptions.SERVER_NUM_THREADS),
@@ -153,15 +157,17 @@ public class DefaultDispatcherResourceManagerComponentFactory
 
             final long updateInterval =
                     configuration.getLong(MetricOptions.METRIC_FETCHER_UPDATE_INTERVAL);
+            // tips webUI默认10s抓取一次指标，值越小对服务器压力越大，如果设置为0则禁用
             final MetricFetcher metricFetcher =
                     updateInterval == 0
                             ? VoidMetricFetcher.INSTANCE
                             : MetricFetcherImpl.fromConfiguration(
-                                    configuration,
-                                    metricQueryServiceRetriever,
-                                    dispatcherGatewayRetriever,
-                                    executor);
+                            configuration,
+                            metricQueryServiceRetriever,
+                            dispatcherGatewayRetriever,
+                            executor);
 
+            // tips webUI监控端
             webMonitorEndpoint =
                     restEndpointFactory.createRestEndpoint(
                             configuration,
@@ -178,6 +184,7 @@ public class DefaultDispatcherResourceManagerComponentFactory
 
             final String hostname = RpcUtils.getHostname(rpcService);
 
+            // tips flink RM服务对象
             resourceManagerService =
                     ResourceManagerServiceImpl.create(
                             resourceManagerFactory,
@@ -194,14 +201,17 @@ public class DefaultDispatcherResourceManagerComponentFactory
                             hostname,
                             ioExecutor);
 
+            // tips 历史服务档案
             final HistoryServerArchivist historyServerArchivist =
                     HistoryServerArchivist.createHistoryServerArchivist(
                             configuration, webMonitorEndpoint, ioExecutor);
 
+            // tips 调度器操作缓存（sp、ck的一些缓存结果，默认缓存5min）
             final DispatcherOperationCaches dispatcherOperationCaches =
                     new DispatcherOperationCaches(
                             configuration.get(RestOptions.ASYNC_OPERATION_STORE_DURATION));
 
+            // tips 部分调度服务对象（还要再提供给dispatcher来启动）
             final PartialDispatcherServices partialDispatcherServices =
                     new PartialDispatcherServices(
                             configuration,
@@ -220,6 +230,7 @@ public class DefaultDispatcherResourceManagerComponentFactory
                             dispatcherOperationCaches);
 
             log.debug("Starting Dispatcher.");
+            // tips 启动dispatcher
             dispatcherRunner =
                     dispatcherRunnerFactory.createDispatcherRunner(
                             highAvailabilityServices.getDispatcherLeaderElectionService(),

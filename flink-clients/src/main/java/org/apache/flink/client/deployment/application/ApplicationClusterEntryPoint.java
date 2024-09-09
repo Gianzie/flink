@@ -68,12 +68,15 @@ public class ApplicationClusterEntryPoint extends ClusterEntrypoint {
 
     @Override
     protected DispatcherResourceManagerComponentFactory
-            createDispatcherResourceManagerComponentFactory(final Configuration configuration) {
+    createDispatcherResourceManagerComponentFactory(final Configuration configuration) {
         return new DefaultDispatcherResourceManagerComponentFactory(
+                // tips Dispatcher工厂对象
                 new DefaultDispatcherRunnerFactory(
                         ApplicationDispatcherLeaderProcessFactoryFactory.create(
                                 configuration, SessionDispatcherFactory.INSTANCE, program)),
+                // tips YARNResourceManager工厂对象
                 resourceManagerFactory,
+                // tips REST API工厂对象（将flink的作业提交、状态查询、监控等功能暴露出来供外部系统和用户使用，dinky和streampark应该主要就是在该对象上延伸）
                 JobRestEndpointFactory.INSTANCE);
     }
 

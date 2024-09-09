@@ -58,6 +58,7 @@ public class JobDispatcherLeaderProcess extends AbstractDispatcherLeaderProcess 
     @Override
     protected void onStart() {
         final DispatcherGatewayService dispatcherService =
+                // tips 这里启动了dispatcher
                 dispatcherGatewayServiceFactory.create(
                         DispatcherId.fromUuid(getLeaderSessionId()),
                         CollectionUtil.ofNullable(jobGraph),

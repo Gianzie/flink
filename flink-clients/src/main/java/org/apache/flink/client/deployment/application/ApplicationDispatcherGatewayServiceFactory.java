@@ -89,11 +89,13 @@ public class ApplicationDispatcherGatewayServiceFactory
             JobGraphWriter jobGraphWriter,
             JobResultStore jobResultStore) {
 
+        // tips 获取所有需要恢复的JobId
         final List<JobID> recoveredJobIds = getRecoveredJobIds(recoveredJobs);
 
         final Dispatcher dispatcher;
         try {
             dispatcher =
+                    // tips 创建dispatcher对象逻辑，值得细看
                     dispatcherFactory.createDispatcher(
                             rpcService,
                             fencingToken,
@@ -113,6 +115,7 @@ public class ApplicationDispatcherGatewayServiceFactory
             throw new FlinkRuntimeException("Could not create the Dispatcher rpc endpoint.", e);
         }
 
+        // tips dispatcher启动
         dispatcher.start();
 
         return DefaultDispatcherGatewayService.from(dispatcher);

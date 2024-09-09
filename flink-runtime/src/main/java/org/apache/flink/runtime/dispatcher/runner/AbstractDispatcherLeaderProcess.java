@@ -92,11 +92,13 @@ public abstract class AbstractDispatcherLeaderProcess implements DispatcherLeade
 
     @Override
     public final void start() {
+        // tips enter
         runIfStateIs(State.CREATED, this::startInternal);
     }
 
     private void startInternal() {
         log.info("Start {}.", getClass().getSimpleName());
+        // tips 修改状态
         state = State.RUNNING;
         onStart();
     }

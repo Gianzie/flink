@@ -326,6 +326,7 @@ public abstract class Dispatcher extends FencedRpcEndpoint<DispatcherId>
     @Override
     public void onStart() throws Exception {
         try {
+            // tips 启动dispatcher并注册NUM_RUNNING_JOBS metric
             startDispatcherServices();
         } catch (Throwable t) {
             final DispatcherException exception =
@@ -512,7 +513,7 @@ public abstract class Dispatcher extends FencedRpcEndpoint<DispatcherId>
                 final DuplicateJobSubmissionException exception =
                         isInGloballyTerminalState(jobGraph.getJobID())
                                 ? DuplicateJobSubmissionException.ofGloballyTerminated(
-                                        jobGraph.getJobID())
+                                jobGraph.getJobID())
                                 : DuplicateJobSubmissionException.of(jobGraph.getJobID());
                 return FutureUtils.completedExceptionally(exception);
             } else if (isPartialResourceConfigured(jobGraph)) {
@@ -683,7 +684,7 @@ public abstract class Dispatcher extends FencedRpcEndpoint<DispatcherId>
                                     Preconditions.checkState(
                                             jobManagerRunnerRegistry.isRegistered(jobId)
                                                     && jobManagerRunnerRegistry.get(jobId)
-                                                            == jobManagerRunner,
+                                                    == jobManagerRunner,
                                             "The job entry in runningJobs must be bound to the lifetime of the JobManagerRunner.");
 
                                     if (jobManagerRunnerResult != null) {
@@ -955,7 +956,7 @@ public abstract class Dispatcher extends FencedRpcEndpoint<DispatcherId>
 
     @Override
     public CompletableFuture<Collection<Tuple2<ResourceID, String>>>
-            requestTaskManagerMetricQueryServiceAddresses(Time timeout) {
+    requestTaskManagerMetricQueryServiceAddresses(Time timeout) {
         return runResourceManagerCommand(
                 resourceManagerGateway ->
                         resourceManagerGateway.requestTaskManagerMetricQueryServiceAddresses(
