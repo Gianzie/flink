@@ -230,7 +230,7 @@ public class DefaultDispatcherResourceManagerComponentFactory
                             dispatcherOperationCaches);
 
             log.debug("Starting Dispatcher.");
-            // tips 启动dispatcher
+            // tips 这里启动了Dispatcher、JobMaster
             dispatcherRunner =
                     dispatcherRunnerFactory.createDispatcherRunner(
                             highAvailabilityServices.getDispatcherLeaderElectionService(),
