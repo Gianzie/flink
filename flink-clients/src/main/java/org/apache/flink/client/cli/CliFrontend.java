@@ -1154,6 +1154,7 @@ public class CliFrontend {
     public static void main(final String[] args) {
         int retCode = INITIAL_RET_CODE;
         try {
+            // tips 客户端开始执行逻辑
             retCode = mainInternal(args);
         } finally {
             System.exit(retCode);
@@ -1162,22 +1163,28 @@ public class CliFrontend {
 
     @VisibleForTesting
     static int mainInternal(final String[] args) {
+        // tips 打印一些环境信息
         EnvironmentInformation.logEnvironmentInfo(LOG, "Command Line Client", args);
 
         // 1. find the configuration directory
+        // tips 配置文件目录
         final String configurationDirectory = getConfigurationDirectoryFromEnv();
 
         // 2. load the global configuration
+        // tips 配置文件：flink-conf.yaml
         final Configuration configuration =
                 GlobalConfiguration.loadConfiguration(configurationDirectory);
 
         // 3. load the custom command lines
+        // tips 按顺序加载自定义客户端命令行（GenericCli、YARNCli、DefaultCli）
         final List<CustomCommandLine> customCommandLines =
                 loadCustomCommandLines(configuration, configurationDirectory);
 
         int retCode = INITIAL_RET_CODE;
         try {
+            // tips 创建客户端前端对象
             final CliFrontend cli = new CliFrontend(configuration, customCommandLines);
+            // tips 解析传入的命令行参数，得到CommandLine对象
             CommandLine commandLine =
                     cli.getCommandLine(
                             new Options(),
@@ -1186,6 +1193,7 @@ public class CliFrontend {
             Configuration securityConfig = new Configuration(cli.configuration);
             DynamicPropertiesUtil.encodeDynamicProperties(commandLine, securityConfig);
             SecurityUtils.install(new SecurityConfiguration(securityConfig));
+            // tips Client准备开始运行
             retCode = SecurityUtils.getInstalledContext().runSecured(() -> cli.parseAndRun(args));
         } catch (Throwable t) {
             final Throwable strippedThrowable =
@@ -1244,12 +1252,14 @@ public class CliFrontend {
     public static List<CustomCommandLine> loadCustomCommandLines(
             Configuration configuration, String configurationDirectory) {
         List<CustomCommandLine> customCommandLines = new ArrayList<>();
+        // tips 按顺序先添加GenericCLI
         customCommandLines.add(new GenericCLI(configuration, configurationDirectory));
 
         //	Command line interface of the YARN session, with a special initialization here
         //	to prefix all options with y/yarn.
         final String flinkYarnSessionCLI = "org.apache.flink.yarn.cli.FlinkYarnSessionCli";
         try {
+            // tips 添加YARN模式的命令行
             customCommandLines.add(
                     loadCustomCommandLine(
                             flinkYarnSessionCLI,
@@ -1261,15 +1271,16 @@ public class CliFrontend {
             final String errorYarnSessionCLI = "org.apache.flink.yarn.cli.FallbackYarnSessionCli";
             try {
                 LOG.info("Loading FallbackYarnSessionCli");
+                // tips 如果添加YARN模式失败，添加FallbackYarnSessionCli
                 customCommandLines.add(loadCustomCommandLine(errorYarnSessionCLI, configuration));
             } catch (Exception exception) {
                 LOG.warn("Could not load CLI class {}.", flinkYarnSessionCLI, e);
             }
         }
 
-        //	Tips: DefaultCLI must be added at last, because getActiveCustomCommandLine(..) will get
-        // the
-        //	      active CustomCommandLine in order and DefaultCLI isActive always return true.
+        // Tips: DefaultCLI must be added at last, because getActiveCustomCommandLine(..) will get
+        //  the active CustomCommandLine in order and DefaultCLI isActive always return true.
+        // tips 默认客户端必须最后添加（getActiveCustomCommandLine()按顺序获取有效的自定义命令行时，默认客户端永远是active的）
         customCommandLines.add(new DefaultCLI());
 
         return customCommandLines;
