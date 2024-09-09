@@ -446,6 +446,7 @@ public class YarnClusterDescriptor implements ClusterDescriptor<ApplicationId> {
         checkNotNull(clusterSpecification);
         checkNotNull(applicationConfiguration);
 
+        // tips 部署前再从配置文件中校验一下是否为yarn-application模式
         final YarnDeploymentTarget deploymentTarget =
                 YarnDeploymentTarget.fromConfig(flinkConfiguration);
         if (YarnDeploymentTarget.APPLICATION != deploymentTarget) {
@@ -461,6 +462,7 @@ public class YarnClusterDescriptor implements ClusterDescriptor<ApplicationId> {
         applicationConfiguration.applyToConfiguration(flinkConfiguration);
 
         // No need to do pipelineJars validation if it is a PyFlink job.
+        // tips 如果是PyFlink job则不需要执行pipelineJars校验
         if (!(PackagedProgramUtils.isPython(applicationConfiguration.getApplicationClassName())
                 || PackagedProgramUtils.isPython(applicationConfiguration.getProgramArguments()))) {
             final List<String> pipelineJars =
@@ -471,9 +473,14 @@ public class YarnClusterDescriptor implements ClusterDescriptor<ApplicationId> {
         }
 
         try {
+            // tips enter
+            //  代码走到这里，可以体现出和per-job的不同（待看完后面代码再总结是否修改）
+            //  app：由client deploy，并且streamGraph、jobGraph还未生成
+            //  per-job：从StreamExecutionEnvironment.execute()进行deploy；由client生成streamGraph、jobGraph
             return deployInternal(
                     clusterSpecification,
                     "Flink Application Cluster",
+                    // tips YARN启动ApplicationMaster的入口类
                     YarnApplicationClusterEntryPoint.class.getName(),
                     null,
                     false);
@@ -537,7 +544,9 @@ public class YarnClusterDescriptor implements ClusterDescriptor<ApplicationId> {
             @Nullable JobGraph jobGraph,
             boolean detached)
             throws Exception {
+        // tips app和per-job模式下，部署ApplicationMaster的逻辑基本上是一致的，只区别传参
 
+        // tips 校验用户权限
         final UserGroupInformation currentUser = UserGroupInformation.getCurrentUser();
         if (HadoopUtils.isKerberosSecurityEnabled(currentUser)) {
             boolean useTicketCache =
@@ -564,10 +573,12 @@ public class YarnClusterDescriptor implements ClusterDescriptor<ApplicationId> {
             }
         }
 
+        // tips 校验（jar文件、flink配置文件、core数量等（下面校验内存））
         isReadyForDeployment(clusterSpecification);
 
         // ------------------ Check if the specified queue exists --------------------
 
+        // tips 校验用户指定等queue是否存在
         checkYarnQueues(yarnClient);
 
         // ------------------ Check if the YARN ClusterClient has the requested resources
@@ -614,6 +625,7 @@ public class YarnClusterDescriptor implements ClusterDescriptor<ApplicationId> {
 
         LOG.info("Cluster specification: {}", validClusterSpecification);
 
+        // tips app模式下传参为false，需要占用客户端
         final ClusterEntrypoint.ExecutionMode executionMode =
                 detached
                         ? ClusterEntrypoint.ExecutionMode.DETACHED
@@ -623,6 +635,7 @@ public class YarnClusterDescriptor implements ClusterDescriptor<ApplicationId> {
                 ClusterEntrypoint.INTERNAL_CLUSTER_EXECUTION_MODE, executionMode.toString());
 
         ApplicationReport report =
+                // tips YARN启动AM（里面有臭长臭长的400+行fileUploader代码）
                 startAppMaster(
                         flinkConfiguration,
                         applicationName,
@@ -752,7 +765,7 @@ public class YarnClusterDescriptor implements ClusterDescriptor<ApplicationId> {
             List<QueueInfo> queues = yarnClient.getAllQueues();
             if (queues.size() > 0
                     && this.yarnQueue
-                            != null) { // check only if there are queues configured in yarn and for
+                    != null) { // check only if there are queues configured in yarn and for
                 // this session.
                 boolean queueFound = false;
                 for (QueueInfo queue : queues) {
@@ -879,6 +892,7 @@ public class YarnClusterDescriptor implements ClusterDescriptor<ApplicationId> {
         }
 
         // only for per job mode
+        // tips app模式下不需要上传本地文件
         if (jobGraph != null) {
             for (Map.Entry<String, DistributedCache.DistributedCacheEntry> entry :
                     jobGraph.getUserArtifacts().entrySet()) {
@@ -933,6 +947,7 @@ public class YarnClusterDescriptor implements ClusterDescriptor<ApplicationId> {
 
         // only for application mode
         // Python jar file only needs to be shipped and should not be added to classpath.
+        // tips app&python模式下才需要上传一些文件
         if (YarnApplicationClusterEntryPoint.class.getName().equals(yarnClusterEntrypoint)
                 && PackagedProgramUtils.isPython(configuration.get(APPLICATION_MAIN_CLASS))) {
             fileUploader.registerMultipleLocalResources(
@@ -1007,7 +1022,7 @@ public class YarnClusterDescriptor implements ClusterDescriptor<ApplicationId> {
             try {
                 tmpJobGraphFile = File.createTempFile(appId.toString(), null);
                 try (FileOutputStream output = new FileOutputStream(tmpJobGraphFile);
-                        ObjectOutputStream obOutput = new ObjectOutputStream(output)) {
+                     ObjectOutputStream obOutput = new ObjectOutputStream(output)) {
                     obOutput.writeObject(jobGraph);
                 }
 
@@ -1226,6 +1241,7 @@ public class YarnClusterDescriptor implements ClusterDescriptor<ApplicationId> {
                 new DeploymentFailureHook(yarnApplication, fileUploader.getApplicationDir());
         Runtime.getRuntime().addShutdownHook(deploymentFailureHook);
         LOG.info("Submitting application master " + appId);
+        // tips 这里提交了applicationMaster（后续逻辑属于Hadoop，看flink相关代码去appContext.amContainer.yarnClusterEntrypoint）
         yarnClient.submitApplication(appContext);
 
         LOG.info("Waiting for the cluster to be allocated");

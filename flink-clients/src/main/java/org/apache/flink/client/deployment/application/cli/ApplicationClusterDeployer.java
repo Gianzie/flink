@@ -59,11 +59,14 @@ public class ApplicationClusterDeployer implements ApplicationDeployer {
 
         final ClusterClientFactory<ClusterID> clientFactory =
                 clientServiceLoader.getClusterClientFactory(configuration);
+        // tips 创建相对应模式的集群描述器（YARN、k8s、standalone）
         try (final ClusterDescriptor<ClusterID> clusterDescriptor =
-                clientFactory.createClusterDescriptor(configuration)) {
+                     clientFactory.createClusterDescriptor(configuration)) {
+            // tips 根据配置文件创建相应的组件（JM内存、TM内存、每个TM的slot数量）
             final ClusterSpecification clusterSpecification =
                     clientFactory.getClusterSpecification(configuration);
 
+            // tips enter
             clusterDescriptor.deployApplicationCluster(
                     clusterSpecification, applicationConfiguration);
         }
