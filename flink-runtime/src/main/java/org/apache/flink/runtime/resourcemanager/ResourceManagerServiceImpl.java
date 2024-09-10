@@ -190,6 +190,7 @@ public class ResourceManagerServiceImpl implements ResourceManagerService, Leade
         handleLeaderEventExecutor.execute(
                 () -> {
                     synchronized (lock) {
+                        // tips 第一次启动RM时，running is false，这里为什么没有执行if逻辑？
                         if (!running) {
                             LOG.info(
                                     "Resource manager service is not running. Ignore granting leadership with session ID {}.",
