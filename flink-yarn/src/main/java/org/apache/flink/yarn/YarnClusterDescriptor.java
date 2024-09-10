@@ -651,6 +651,7 @@ public class YarnClusterDescriptor implements ClusterDescriptor<ApplicationId> {
             logDetachedClusterInformation(yarnApplicationId, LOG);
         }
 
+        // tips 将host&port设置到flink配置文件中，用于后续客户端连接JM（client端打印的最后日志信息）
         setClusterEntrypointInfoToConfig(report);
 
         return () -> {
