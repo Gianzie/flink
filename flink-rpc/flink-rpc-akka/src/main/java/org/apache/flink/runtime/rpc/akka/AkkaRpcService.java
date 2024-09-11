@@ -324,6 +324,7 @@ public class AkkaRpcService implements RpcService {
         // code is loaded dynamically (for example from an OSGI bundle) through a custom ClassLoader
         ClassLoader classLoader = getClass().getClassLoader();
 
+        // tips 后续需要通信的组件通过反射调用
         @SuppressWarnings("unchecked")
         RpcServer server =
                 (RpcServer)

@@ -246,6 +246,7 @@ public abstract class Dispatcher extends FencedRpcEndpoint<DispatcherId>
             JobManagerRunnerRegistry jobManagerRunnerRegistry,
             ResourceCleanerFactory resourceCleanerFactory)
             throws Exception {
+        // tips enter
         super(rpcService, RpcServiceUtils.createRandomName(DISPATCHER_NAME), fencingToken);
         assertRecoveredJobsAndDirtyJobResults(recoveredJobs, recoveredDirtyJobs);
 

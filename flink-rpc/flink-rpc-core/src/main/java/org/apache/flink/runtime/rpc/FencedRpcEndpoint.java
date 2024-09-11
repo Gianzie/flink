@@ -35,6 +35,7 @@ public abstract class FencedRpcEndpoint<F extends Serializable> extends RpcEndpo
     private final F fencingToken;
 
     protected FencedRpcEndpoint(RpcService rpcService, String endpointId, F fencingToken) {
+        // tips enter
         super(rpcService, endpointId);
 
         Preconditions.checkNotNull(fencingToken, "The fence token should be null");

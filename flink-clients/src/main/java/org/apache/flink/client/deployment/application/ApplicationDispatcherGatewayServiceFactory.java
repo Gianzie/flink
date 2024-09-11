@@ -95,7 +95,7 @@ public class ApplicationDispatcherGatewayServiceFactory
         final Dispatcher dispatcher;
         try {
             dispatcher =
-                    // tips 创建dispatcher对象逻辑，值得细看
+                    // tips 创建dispatcher对象逻辑，值得细看（启动了rpcServer）
                     dispatcherFactory.createDispatcher(
                             rpcService,
                             fencingToken,

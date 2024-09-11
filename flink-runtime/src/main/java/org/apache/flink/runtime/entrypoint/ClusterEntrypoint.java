@@ -362,8 +362,10 @@ public abstract class ClusterEntrypoint implements AutoCloseableAsync, FatalErro
 
             LOG.info("Using working directory: {}.", workingDirectory);
 
+            // tips 从配置文件中初始化rpcSystem
             rpcSystem = RpcSystem.load(configuration);
 
+            // tips 创建远程rpc服务
             commonRpcService =
                     RpcUtils.createRemoteRpcService(
                             rpcSystem,
