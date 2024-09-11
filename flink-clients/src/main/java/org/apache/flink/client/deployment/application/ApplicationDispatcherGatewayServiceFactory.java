@@ -102,6 +102,7 @@ public class ApplicationDispatcherGatewayServiceFactory
                             recoveredJobs,
                             recoveredDirtyJobResults,
                             (dispatcherGateway, scheduledExecutor, errorHandler) ->
+                                    // tips 这里是非常重要的逻辑，找到用户代码的入口类
                                     new ApplicationDispatcherBootstrap(
                                             application,
                                             recoveredJobIds,

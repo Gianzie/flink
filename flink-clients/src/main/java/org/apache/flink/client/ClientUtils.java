@@ -87,6 +87,7 @@ public enum ClientUtils {
                     "Starting program (detached: {})",
                     !configuration.getBoolean(DeploymentOptions.ATTACHED));
 
+            // tips 客户端远程执行的环境
             ContextEnvironment.setAsContext(
                     executorServiceLoader,
                     configuration,
@@ -94,6 +95,7 @@ public enum ClientUtils {
                     enforceSingleJobExecution,
                     suppressSysout);
 
+            // tips 真正写程序时获取的流上下文环境对象
             StreamContextEnvironment.setAsContext(
                     executorServiceLoader,
                     configuration,
@@ -102,6 +104,7 @@ public enum ClientUtils {
                     suppressSysout);
 
             try {
+                // tips 反射调用用户代码
                 program.invokeInteractiveModeForExecution();
             } finally {
                 ContextEnvironment.unsetAsContext();
