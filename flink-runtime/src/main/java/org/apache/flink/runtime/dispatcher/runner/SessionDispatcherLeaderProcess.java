@@ -81,8 +81,10 @@ public class SessionDispatcherLeaderProcess extends AbstractDispatcherLeaderProc
 
     @Override
     protected void onStart() {
+        // tips 启动JobGraphStore（可以将作业图持久化到各种分布式存储中，亦可获取作业图的改变来做出响应？）
         startServices();
 
+        // tips 基于要恢复的作业图和脏作业结果创建dispatcher并启动
         onGoingRecoveryOperation =
                 createDispatcherBasedOnRecoveredJobGraphsAndRecoveredDirtyJobResults();
     }
@@ -101,12 +103,14 @@ public class SessionDispatcherLeaderProcess extends AbstractDispatcherLeaderProc
 
     private void createDispatcherIfRunning(
             Collection<JobGraph> jobGraphs, Collection<JobResult> recoveredDirtyJobResults) {
+        // tips 创建dispatcher
         runIfStateIs(State.RUNNING, () -> createDispatcher(jobGraphs, recoveredDirtyJobResults));
     }
 
     private void createDispatcher(
             Collection<JobGraph> jobGraphs, Collection<JobResult> recoveredDirtyJobResults) {
 
+        // tips 这里和per-job模式一样都是通过dispatcherGatewayServiceFactory来创建和启动dispatcher，所以后面源码走势没错
         final DispatcherGatewayService dispatcherService =
                 dispatcherGatewayServiceFactory.create(
                         DispatcherId.fromUuid(getLeaderSessionId()),
@@ -120,17 +124,20 @@ public class SessionDispatcherLeaderProcess extends AbstractDispatcherLeaderProc
 
     private CompletableFuture<Void>
             createDispatcherBasedOnRecoveredJobGraphsAndRecoveredDirtyJobResults() {
+        // tips 获取所有正在运行的DirtyJob
         final CompletableFuture<Collection<JobResult>> dirtyJobsFuture =
                 CompletableFuture.supplyAsync(this::getDirtyJobResultsIfRunning, ioExecutor);
 
         return dirtyJobsFuture
                 .thenApplyAsync(
                         dirtyJobs ->
+                                // tips 恢复所有尚未完成的持久作业图
                                 this.recoverJobsIfRunning(
                                         dirtyJobs.stream()
                                                 .map(JobResult::getJobId)
                                                 .collect(Collectors.toSet())),
                         ioExecutor)
+                // tips 如果正在运行则创建dispatcher
                 .thenAcceptBoth(dirtyJobsFuture, this::createDispatcherIfRunning)
                 .handle(this::onErrorIfRunning);
     }
@@ -145,6 +152,7 @@ public class SessionDispatcherLeaderProcess extends AbstractDispatcherLeaderProc
         final Collection<JobID> jobIds = getJobIds();
         final Collection<JobGraph> recoveredJobGraphs = new ArrayList<>();
 
+        // tips 初次启动这里是空的
         for (JobID jobId : jobIds) {
             if (!recoveredDirtyJobResults.contains(jobId)) {
                 tryRecoverJob(jobId).ifPresent(recoveredJobGraphs::add);
