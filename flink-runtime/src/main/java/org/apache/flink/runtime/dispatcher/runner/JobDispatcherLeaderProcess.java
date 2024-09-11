@@ -58,7 +58,7 @@ public class JobDispatcherLeaderProcess extends AbstractDispatcherLeaderProcess 
     @Override
     protected void onStart() {
         final DispatcherGatewayService dispatcherService =
-                // tips 这里启动了dispatcher
+                // tips 这里启动了dispatcher（per-job模式才看此实现，后面的注释先不要管）
                 dispatcherGatewayServiceFactory.create(
                         DispatcherId.fromUuid(getLeaderSessionId()),
                         CollectionUtil.ofNullable(jobGraph),

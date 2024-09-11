@@ -73,6 +73,7 @@ public class ApplicationClusterEntryPoint extends ClusterEntrypoint {
                 // tips Dispatcher工厂对象
                 new DefaultDispatcherRunnerFactory(
                         ApplicationDispatcherLeaderProcessFactoryFactory.create(
+                                // tips app模式下使用的是SessionDispatcher实例
                                 configuration, SessionDispatcherFactory.INSTANCE, program)),
                 // tips YARNResourceManager工厂对象
                 resourceManagerFactory,
