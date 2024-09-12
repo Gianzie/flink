@@ -1992,6 +1992,7 @@ public class StreamExecutionEnvironment implements AutoCloseable {
             Source<OUT, ?, ?> source,
             WatermarkStrategy<OUT> timestampsAndWatermarks,
             String sourceName) {
+        // tips flink操作数据的第一步：对接数据，只有得到DataStream才可以使用后续的算子
         return fromSource(source, timestampsAndWatermarks, sourceName, null);
     }
 
@@ -2020,9 +2021,13 @@ public class StreamExecutionEnvironment implements AutoCloseable {
             String sourceName,
             TypeInformation<OUT> typeInfo) {
 
+        // tips 获取数据源数据类型
         final TypeInformation<OUT> resolvedTypeInfo =
                 getTypeInfo(source, sourceName, Source.class, typeInfo);
 
+        // tips create DataStreamSource，用来调用后续算子
+        //  数据源作为SourceTransformation赋值给DataStream的transformation属性，作为下一个算子的输入
+        //  当后续通过DataStream调用其他算子时，会一并add到StreamExecutionEnvironment的transformations属性中
         return new DataStreamSource<>(
                 this,
                 checkNotNull(source, "source"),
@@ -2648,6 +2653,7 @@ public class StreamExecutionEnvironment implements AutoCloseable {
             Class<?> baseSourceClass,
             TypeInformation<OUT> typeInfo) {
         TypeInformation<OUT> resolvedTypeInfo = typeInfo;
+        // tips 以mysql-cdc为例，它实现了ResultTypeQueryable接口，返回的是指定的泛型类型（eg：String）
         if (resolvedTypeInfo == null && source instanceof ResultTypeQueryable) {
             resolvedTypeInfo = ((ResultTypeQueryable<OUT>) source).getProducedType();
         }
