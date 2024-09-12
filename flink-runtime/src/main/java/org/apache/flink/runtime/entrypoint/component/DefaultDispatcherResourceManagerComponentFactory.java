@@ -167,7 +167,7 @@ public class DefaultDispatcherResourceManagerComponentFactory
                             dispatcherGatewayRetriever,
                             executor);
 
-            // tips webUI监控端
+            // tips webUI监控端（这里看JobRestEndpointFactory的实现）
             webMonitorEndpoint =
                     restEndpointFactory.createRestEndpoint(
                             configuration,

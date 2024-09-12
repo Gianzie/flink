@@ -147,6 +147,7 @@ public final class DefaultDispatcherRunner implements DispatcherRunner, LeaderCo
 
     private DispatcherLeaderProcess createNewDispatcherLeaderProcess(UUID leaderSessionID) {
         final DispatcherLeaderProcess newDispatcherLeaderProcess =
+                // tips app模式下查看SessionDispatcherLeaderProcessFactory的实现
                 dispatcherLeaderProcessFactory.create(leaderSessionID);
 
         forwardShutDownFuture(newDispatcherLeaderProcess);

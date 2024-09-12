@@ -109,6 +109,7 @@ public class AkkaBootstrapTools {
             final int externalPort = portsIterator.next();
 
             try {
+                // tips 启动远程actor系统
                 return startRemoteActorSystem(
                         configuration,
                         actorSystemName,
@@ -184,6 +185,7 @@ public class AkkaBootstrapTools {
                 akkaConfig = customConfig.withFallback(akkaConfig);
             }
 
+            // tips enter
             return startActorSystem(akkaConfig, actorSystemName, logger);
         } catch (Throwable t) {
             if (t instanceof ChannelException) {

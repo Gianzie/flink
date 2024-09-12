@@ -117,6 +117,7 @@ public class ApplicationDispatcherBootstrap implements DispatcherBootstrap {
         this.application = checkNotNull(application);
         this.errorHandler = checkNotNull(errorHandler);
 
+        // tips enter
         this.applicationCompletionFuture =
                 fixJobIdAndRunApplicationAsync(dispatcherGateway, scheduledExecutor);
 
@@ -212,6 +213,7 @@ public class ApplicationDispatcherBootstrap implements DispatcherBootstrap {
                 configuration.getBoolean(DeploymentOptions.SUBMIT_FAILED_JOB_ON_APPLICATION_ERROR);
         if (!HighAvailabilityMode.isHighAvailabilityModeActivated(configuration)
                 && !configuredJobId.isPresent()) {
+            // tips 非高可用模式&作业不存在时，enter
             return runApplicationAsync(
                     dispatcherGateway, scheduledExecutor, false, submitFailedJobOnApplicationError);
         }
@@ -251,6 +253,7 @@ public class ApplicationDispatcherBootstrap implements DispatcherBootstrap {
         applicationExecutionTask =
                 scheduledExecutor.schedule(
                         () ->
+                                // tips enter
                                 runApplicationEntryPoint(
                                         applicationExecutionFuture,
                                         tolerateMissingResult,
@@ -298,6 +301,7 @@ public class ApplicationDispatcherBootstrap implements DispatcherBootstrap {
                     new EmbeddedExecutorServiceLoader(
                             applicationJobIds, dispatcherGateway, scheduledExecutor);
 
+            // tips enter
             ClientUtils.executeProgram(
                     executorServiceLoader,
                     configuration,

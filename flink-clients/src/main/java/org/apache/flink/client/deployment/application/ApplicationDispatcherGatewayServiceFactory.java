@@ -95,13 +95,14 @@ public class ApplicationDispatcherGatewayServiceFactory
         final Dispatcher dispatcher;
         try {
             dispatcher =
-                    // tips 创建dispatcher对象逻辑，值得细看
+                    // tips 创建dispatcher对象逻辑，值得细看（启动了rpcServer）
                     dispatcherFactory.createDispatcher(
                             rpcService,
                             fencingToken,
                             recoveredJobs,
                             recoveredDirtyJobResults,
                             (dispatcherGateway, scheduledExecutor, errorHandler) ->
+                                    // tips 这里是非常重要的逻辑，找到用户代码的入口类
                                     new ApplicationDispatcherBootstrap(
                                             application,
                                             recoveredJobIds,

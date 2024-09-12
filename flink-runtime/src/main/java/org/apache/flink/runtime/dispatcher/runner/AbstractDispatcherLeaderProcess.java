@@ -100,6 +100,7 @@ public abstract class AbstractDispatcherLeaderProcess implements DispatcherLeade
         log.info("Start {}.", getClass().getSimpleName());
         // tips 修改状态
         state = State.RUNNING;
+        // tips app模式下查看SessionDispatcher实现（可以在ApplicationClusterEntryPoint.java中搜索SessionDispatcherFactory.INSTANCE查看）
         onStart();
     }
 
