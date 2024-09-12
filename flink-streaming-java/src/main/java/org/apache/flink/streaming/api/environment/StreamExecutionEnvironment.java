@@ -2388,6 +2388,7 @@ public class StreamExecutionEnvironment implements AutoCloseable {
      * @return The execution environment of the context in which the program is executed.
      */
     public static StreamExecutionEnvironment getExecutionEnvironment() {
+        // tips flink程序的第一行代码，获取执行环境
         return getExecutionEnvironment(new Configuration());
     }
 
@@ -2405,7 +2406,9 @@ public class StreamExecutionEnvironment implements AutoCloseable {
      */
     public static StreamExecutionEnvironment getExecutionEnvironment(Configuration configuration) {
         return Utils.resolveFactory(threadLocalContextEnvironmentFactory, contextEnvironmentFactory)
+                // tips 非local执行（看注释的话应该是调用了StreamContextEnvironment类）
                 .map(factory -> factory.createExecutionEnvironment(configuration))
+                // tips local执行
                 .orElseGet(() -> StreamExecutionEnvironment.createLocalEnvironment(configuration));
     }
 
