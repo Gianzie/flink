@@ -570,11 +570,14 @@ public class DataStream<T> {
      * @return The transformed {@link DataStream}.
      */
     public <R> SingleOutputStreamOperator<R> map(MapFunction<T, R> mapper) {
+        // tips 当env对接完source后得到DataStream，可以开始调用flink的算子，这里以map为例
 
+        // tips 获取map算子的返回值类型
         TypeInformation<R> outType =
                 TypeExtractor.getMapReturnTypes(
                         clean(mapper), getType(), Utils.getCallLocationName(), true);
 
+        // tips 核心逻辑：将map算子添加到flink env transformations中
         return map(mapper, outType);
     }
 
@@ -591,6 +594,7 @@ public class DataStream<T> {
      */
     public <R> SingleOutputStreamOperator<R> map(
             MapFunction<T, R> mapper, TypeInformation<R> outputType) {
+        // tips enter
         return transform("Map", outputType, new StreamMap<>(clean(mapper)));
     }
 
@@ -1161,6 +1165,8 @@ public class DataStream<T> {
             TypeInformation<R> outTypeInfo,
             OneInputStreamOperator<T, R> operator) {
 
+        // tips doTransform第三个参数接收的是一个OneInputStreamOperatorFactory
+        //  这里使用算子构建了最简单的工厂类，下面的transform函数直接传递的就是工厂类
         return doTransform(operatorName, outTypeInfo, SimpleOperatorFactory.of(operator));
     }
 
@@ -1192,8 +1198,10 @@ public class DataStream<T> {
             StreamOperatorFactory<R> operatorFactory) {
 
         // read the output type of the input Transform to coax out errors about MissingTypeInfo
+        // tips 读取输入 Transform 的输出类型，以找出有关 MissingTypeInfo 的错误
         transformation.getOutputType();
 
+        // tips 构建一个Transformation算子，map算子这里构建的是单输入类型的子类
         OneInputTransformation<T, R> resultTransform =
                 new OneInputTransformation<>(
                         this.transformation,
@@ -1203,10 +1211,12 @@ public class DataStream<T> {
                         environment.getParallelism(),
                         false);
 
+        // tips 将构建出的OneInputTransformation赋值给DataStream.transformation属性，用于添加到env的transformations属性（一个flink任务的所有算子）
         @SuppressWarnings({"unchecked", "rawtypes"})
         SingleOutputStreamOperator<R> returnStream =
                 new SingleOutputStreamOperator(environment, resultTransform);
 
+        // tips 添加到flink env transformations
         getExecutionEnvironment().addOperator(resultTransform);
 
         return returnStream;
