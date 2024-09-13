@@ -220,6 +220,7 @@ public class StreamContextEnvironment extends StreamExecutionEnvironment {
                     final Configuration mergedEnvConfig = new Configuration();
                     mergedEnvConfig.addAll(clusterConfiguration);
                     mergedEnvConfig.addAll(envInitConfig);
+                    // tips 创建StreamContextEnvironment时指定了app模式下为EmbeddedExecutor
                     return new StreamContextEnvironment(
                             executorServiceLoader,
                             clusterConfiguration,

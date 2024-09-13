@@ -87,7 +87,7 @@ public enum ClientUtils {
                     "Starting program (detached: {})",
                     !configuration.getBoolean(DeploymentOptions.ATTACHED));
 
-            // tips 客户端远程执行的环境
+            // tips 客户端远程执行的环境（指定了app模式下为EmbeddedExecutor）
             ContextEnvironment.setAsContext(
                     executorServiceLoader,
                     configuration,
@@ -95,7 +95,7 @@ public enum ClientUtils {
                     enforceSingleJobExecution,
                     suppressSysout);
 
-            // tips 真正写程序时获取的流上下文环境对象
+            // tips 真正写程序时获取的流上下文环境对象（指定了app模式下为EmbeddedExecutor）
             StreamContextEnvironment.setAsContext(
                     executorServiceLoader,
                     configuration,

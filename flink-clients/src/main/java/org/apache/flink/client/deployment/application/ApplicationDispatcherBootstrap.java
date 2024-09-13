@@ -297,6 +297,7 @@ public class ApplicationDispatcherBootstrap implements DispatcherBootstrap {
         }
         final List<JobID> applicationJobIds = new ArrayList<>(recoveredJobIds);
         try {
+            // tips app模式下创建的PipelineExecutorServiceLoader类型，默认EmbeddedExecutorServiceLoader
             final PipelineExecutorServiceLoader executorServiceLoader =
                     new EmbeddedExecutorServiceLoader(
                             applicationJobIds, dispatcherGateway, scheduledExecutor);
