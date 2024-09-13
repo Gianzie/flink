@@ -1295,6 +1295,7 @@ public class DataStream<T> {
      */
     @PublicEvolving
     public DataStreamSink<T> sinkTo(Sink<T> sink) {
+        // tips flink原生实现了好多Sink接口来对接外部系统，此外还有sink1和addSink来满足
         return this.sinkTo(sink, CustomSinkOperatorUidHashes.DEFAULT);
     }
 
@@ -1313,6 +1314,7 @@ public class DataStream<T> {
     public DataStreamSink<T> sinkTo(
             Sink<T> sink, CustomSinkOperatorUidHashes customSinkOperatorUidHashes) {
         // read the output type of the input Transform to coax out errors about MissingTypeInfo
+        // tips 同map算子一样（读取输入 Transform 的输出类型，来找出 MissingTypeInfo 的错误）
         transformation.getOutputType();
 
         return DataStreamSink.forSink(this, sink, customSinkOperatorUidHashes);

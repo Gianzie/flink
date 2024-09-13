@@ -70,8 +70,10 @@ public class DataStreamSink<T> {
             DataStream<T> inputStream,
             Sink<T> sink,
             CustomSinkOperatorUidHashes customSinkOperatorUidHashes) {
+        // tips 获取输出数据流的执行环境
         final StreamExecutionEnvironment executionEnvironment =
                 inputStream.getExecutionEnvironment();
+        // tips 构建输出类型的Transformation算子
         SinkTransformation<T, T> transformation =
                 new SinkTransformation<>(
                         inputStream,
@@ -81,6 +83,7 @@ public class DataStreamSink<T> {
                         executionEnvironment.getParallelism(),
                         false,
                         customSinkOperatorUidHashes);
+        // tips 同map算子一样，添加到 flink env transformations属性中
         executionEnvironment.addOperator(transformation);
         return new DataStreamSink<>(transformation);
     }
