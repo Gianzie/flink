@@ -62,6 +62,7 @@ public final class OneInputTransformationTranslator<IN, OUT>
     @Override
     public Collection<Integer> translateForStreamingInternal(
             final OneInputTransformation<IN, OUT> transformation, final Context context) {
+        // tips enter
         return translateInternal(
                 transformation,
                 transformation.getOperatorFactory(),

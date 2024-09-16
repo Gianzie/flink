@@ -59,7 +59,9 @@ public abstract class SimpleTransformationTranslator<OUT, T extends Transformati
         checkNotNull(context);
 
         final Collection<Integer> transformedIds =
+                // tips 以map为例，查看OneInputTransformationTranslator实现（StreamGraph添加StreamNode添加StreamEdge）
                 translateForStreamingInternal(transformation, context);
+        // tips 给transformation配置一些参数（缓冲区超时、用户自定义id、描述、hash等）
         configure(transformation, context);
 
         return transformedIds;
@@ -95,17 +97,21 @@ public abstract class SimpleTransformationTranslator<OUT, T extends Transformati
         final StreamGraph streamGraph = context.getStreamGraph();
         final int transformationId = transformation.getId();
 
+        // tips 缓冲区超时
         StreamGraphUtils.configureBufferTimeout(
                 streamGraph, transformationId, transformation, context.getDefaultBufferTimeout());
 
+        // tips 用户指定的transformationId
         if (transformation.getUid() != null) {
             streamGraph.setTransformationUID(transformationId, transformation.getUid());
         }
+        // tips 用户指定的hash
         if (transformation.getUserProvidedNodeHash() != null) {
             streamGraph.setTransformationUserHash(
                     transformationId, transformation.getUserProvidedNodeHash());
         }
 
+        // tips 校验：如果自动生成id关闭了，要确保用户提供了相应的参数
         StreamGraphUtils.validateTransformationUid(streamGraph, transformation);
 
         if (transformation.getMinResources() != null
@@ -118,12 +124,14 @@ public abstract class SimpleTransformationTranslator<OUT, T extends Transformati
 
         final StreamNode streamNode = streamGraph.getStreamNode(transformationId);
         if (streamNode != null) {
+            // tips 校验内存配置？是指 指定容量大小的内存 和 指定比例大小的内存？
             validateUseCaseWeightsNotConflict(
                     streamNode.getManagedMemoryOperatorScopeUseCaseWeights(),
                     transformation.getManagedMemoryOperatorScopeUseCaseWeights());
             streamNode.setManagedMemoryUseCaseWeights(
                     transformation.getManagedMemoryOperatorScopeUseCaseWeights(),
                     transformation.getManagedMemorySlotScopeUseCases());
+            // tips 用户自定义的描述
             if (null != transformation.getDescription()) {
                 streamNode.setOperatorDescription(transformation.getDescription());
             }

@@ -385,9 +385,11 @@ public class StreamGraph implements Pipeline {
             TypeInformation<OUT> outTypeInfo,
             String operatorName) {
         Class<? extends TaskInvokable> invokableClass =
+                // tips 判断输入是否为source
                 operatorFactory.isStreamSource()
                         ? SourceStreamTask.class
                         : OneInputStreamTask.class;
+        // tips 添加算子
         addOperator(
                 vertexID,
                 slotSharingGroup,
@@ -409,6 +411,7 @@ public class StreamGraph implements Pipeline {
             String operatorName,
             Class<? extends TaskInvokable> invokableClass) {
 
+        // tips StreamNode开始出现
         addNode(
                 vertexID,
                 slotSharingGroup,
@@ -416,13 +419,16 @@ public class StreamGraph implements Pipeline {
                 invokableClass,
                 operatorFactory,
                 operatorName);
+        // tips 序列化
         setSerializers(vertexID, createSerializer(inTypeInfo), null, createSerializer(outTypeInfo));
 
+        // tips 算子工厂类设置输出类型
         if (operatorFactory.isOutputTypeConfigurable() && outTypeInfo != null) {
             // sets the output type which must be know at StreamGraph creation time
             operatorFactory.setOutputType(outTypeInfo, executionConfig);
         }
 
+        // tips 算子工厂类设置输入类型
         if (operatorFactory.isInputTypeConfigurable()) {
             operatorFactory.setInputType(inTypeInfo, executionConfig);
         }
@@ -634,6 +640,7 @@ public class StreamGraph implements Pipeline {
             StreamExchangeMode exchangeMode,
             IntermediateDataSetID intermediateDataSetId) {
 
+        // tips 虚拟节点？
         if (virtualSideOutputNodes.containsKey(upStreamVertexID)) {
             int virtualId = upStreamVertexID;
             upStreamVertexID = virtualSideOutputNodes.get(virtualId).f0;
@@ -666,6 +673,7 @@ public class StreamGraph implements Pipeline {
                     exchangeMode,
                     intermediateDataSetId);
         } else {
+            // tips map算子看该函数逻辑
             createActualEdge(
                     upStreamVertexID,
                     downStreamVertexID,
@@ -690,6 +698,7 @@ public class StreamGraph implements Pipeline {
 
         // If no partitioner was specified and the parallelism of upstream and downstream
         // operator matches use forward partitioning, use rebalance otherwise.
+        // tips 如果没有指定分区器并且上下游算子并行度一致，使用forward模式，否则rebalance模式
         if (partitioner == null
                 && upstreamNode.getParallelism() == downstreamNode.getParallelism()) {
             partitioner =
@@ -699,6 +708,7 @@ public class StreamGraph implements Pipeline {
         }
 
         if (partitioner instanceof ForwardPartitioner) {
+            // tips 如果使用了forward分区器，但上下游并行度不一致，使用新设计的ForwardForConsecutiveHashPartitioner
             if (upstreamNode.getParallelism() != downstreamNode.getParallelism()) {
                 if (partitioner instanceof ForwardForConsecutiveHashPartitioner) {
                     partitioner =
@@ -730,6 +740,7 @@ public class StreamGraph implements Pipeline {
          * difficult on the {@link StreamTask} to assign {@link RecordWriter}s to correct {@link
          * StreamEdge}.
          */
+        // tips 以上游StreamNode为基准，只取上下游StreamNode中id相同的StreamEdge数量
         int uniqueId = getStreamEdges(upstreamNode.getId(), downstreamNode.getId()).size();
 
         StreamEdge edge =
@@ -743,7 +754,9 @@ public class StreamGraph implements Pipeline {
                         uniqueId,
                         intermediateDataSetId);
 
+        // tips 上游StreamNode添加OutEdge
         getStreamNode(edge.getSourceId()).addOutEdge(edge);
+        // tips 下游StreamNode添加InEdge
         getStreamNode(edge.getTargetId()).addInEdge(edge);
     }
 

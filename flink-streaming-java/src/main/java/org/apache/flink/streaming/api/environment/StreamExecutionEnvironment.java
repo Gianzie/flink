@@ -2047,6 +2047,7 @@ public class StreamExecutionEnvironment implements AutoCloseable {
      * @throws Exception which occurs during job execution.
      */
     public JobExecutionResult execute() throws Exception {
+        // tips 当所有业务代码写完后，这里就是真正触发计算的位置
         return execute((String) null);
     }
 
@@ -2062,7 +2063,9 @@ public class StreamExecutionEnvironment implements AutoCloseable {
      * @throws Exception which occurs during job execution.
      */
     public JobExecutionResult execute(String jobName) throws Exception {
+        // tips transformations已经包含了之前步骤里所涉及到的算子
         final List<Transformation<?>> originalTransformations = new ArrayList<>(transformations);
+        // tips get StreamGraph，核心逻辑：StreamGraph add StreamNode add StreamEdge
         StreamGraph streamGraph = getStreamGraph();
         if (jobName != null) {
             streamGraph.setJobName(jobName);
@@ -2236,6 +2239,7 @@ public class StreamExecutionEnvironment implements AutoCloseable {
      */
     @Internal
     public StreamGraph getStreamGraph() {
+        // tips enter
         return getStreamGraph(true);
     }
 
@@ -2250,7 +2254,9 @@ public class StreamExecutionEnvironment implements AutoCloseable {
      */
     @Internal
     public StreamGraph getStreamGraph(boolean clearTransformations) {
+        // tips enter
         final StreamGraph streamGraph = getStreamGraph(transformations);
+        // tips 生成StreamGraph后，清空transformations
         if (clearTransformations) {
             transformations.clear();
         }
@@ -2258,7 +2264,9 @@ public class StreamExecutionEnvironment implements AutoCloseable {
     }
 
     private StreamGraph getStreamGraph(List<Transformation<?>> transformations) {
+        // tips 缓存相关
         synchronizeClusterDatasetStatus();
+        // tips 这里生成了StreamGraph
         return getStreamGraphGenerator(transformations).generate();
     }
 
@@ -2291,6 +2299,7 @@ public class StreamExecutionEnvironment implements AutoCloseable {
     }
 
     private StreamGraphGenerator getStreamGraphGenerator(List<Transformation<?>> transformations) {
+        // tips 做个判断
         if (transformations.size() <= 0) {
             throw new IllegalStateException(
                     "No operators defined in streaming topology. Cannot execute.");
@@ -2298,6 +2307,7 @@ public class StreamExecutionEnvironment implements AutoCloseable {
 
         // We copy the transformation so that newly added transformations cannot intervene with the
         // stream graph generation.
+        // tips 将transformations copy 到新的集合，以便新添加的transformation不会干预流图的生成
         return new StreamGraphGenerator(
                         new ArrayList<>(transformations), config, checkpointCfg, configuration)
                 .setStateBackend(defaultStateBackend)

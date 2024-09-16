@@ -61,6 +61,7 @@ abstract class AbstractOneInputTransformationTranslator<IN, OUT, OP extends Tran
         final int transformationId = transformation.getId();
         final ExecutionConfig executionConfig = streamGraph.getExecutionConfig();
 
+        // tips 流图添加算子（StreamNode）
         streamGraph.addOperator(
                 transformationId,
                 slotSharingGroup,
@@ -70,6 +71,7 @@ abstract class AbstractOneInputTransformationTranslator<IN, OUT, OP extends Tran
                 transformation.getOutputType(),
                 transformation.getName());
 
+        // tips key（reduce、keyBy、join时会用）
         if (stateKeySelector != null) {
             TypeSerializer<?> keySerializer = stateKeyType.createSerializer(executionConfig);
             streamGraph.setOneInputStateKey(transformationId, stateKeySelector, keySerializer);
@@ -79,10 +81,12 @@ abstract class AbstractOneInputTransformationTranslator<IN, OUT, OP extends Tran
                 transformation.getParallelism() != ExecutionConfig.PARALLELISM_DEFAULT
                         ? transformation.getParallelism()
                         : executionConfig.getParallelism();
+        // tips 为StreamNode设置并行度
         streamGraph.setParallelism(
                 transformationId, parallelism, transformation.isParallelismConfigured());
         streamGraph.setMaxParallelism(transformationId, transformation.getMaxParallelism());
 
+        // tips 校验必须只有一个input
         final List<Transformation<?>> parentTransformations = transformation.getInputs();
         checkState(
                 parentTransformations.size() == 1,
@@ -90,9 +94,11 @@ abstract class AbstractOneInputTransformationTranslator<IN, OUT, OP extends Tran
                         + parentTransformations.size());
 
         for (Integer inputId : context.getStreamNodeIds(parentTransformations.get(0))) {
+            // tips StreamEdge开始出现（这里传递的就是上下游StreamNode的id，为了给加上OutEdge/InEdge）
             streamGraph.addEdge(inputId, transformationId, 0);
         }
 
+        // tips 物理转换？是干嘛的？
         if (transformation instanceof PhysicalTransformation) {
             streamGraph.setSupportsConcurrentExecutionAttempts(
                     transformationId,

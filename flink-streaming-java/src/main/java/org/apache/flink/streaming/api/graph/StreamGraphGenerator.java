@@ -310,19 +310,25 @@ public class StreamGraphGenerator {
 
     public StreamGraph generate() {
         streamGraph = new StreamGraph(executionConfig, checkpointConfig, savepointRestoreSettings);
+        // tips 是否批模式执行
         shouldExecuteInBatchMode = shouldExecuteInBatchMode();
+        // tips 为流图做一些配置（合并算子链、时间语义（默认处理时间）、自动并行度、开启ck）
         configureStreamGraph(streamGraph);
 
         alreadyTransformed = new IdentityHashMap<>();
 
         for (Transformation<?> transformation : transformations) {
+            // tips ！！！转换每个transformation，核心逻辑：StreamGraph add StreamNode add StreamEdge！！！
             transform(transformation);
         }
 
+        // tips 添加上面transform()中的共享组
         streamGraph.setSlotSharingGroupResource(slotSharingGroupResources);
 
+        // tips slot精细化模式实现 在1.17版本可能会造成的死锁问题
         setFineGrainedGlobalStreamExchangeMode(streamGraph);
 
+        // tips 如果StreamNode的任意InEdge match 禁用未对齐的ck，则将该edge的非对齐检查点设置为false（涉及到了barrier相关的分布式快照算法）
         for (StreamNode node : streamGraph.getStreamNodes()) {
             if (node.getInEdges().stream().anyMatch(this::shouldDisableUnalignedCheckpointing)) {
                 for (StreamEdge edge : node.getInEdges()) {
@@ -529,6 +535,7 @@ public class StreamGraphGenerator {
 
         LOG.debug("Transforming " + transform);
 
+        // tips 如果没有设置最大并行度，直接使用executionConfig中的值（默认CPU核心数）
         if (transform.getMaxParallelism() <= 0) {
 
             // if the max parallelism hasn't been set, then first use the job wide max parallelism
@@ -540,6 +547,7 @@ public class StreamGraphGenerator {
         }
 
         transform
+                // tips slot共享组
                 .getSlotSharingGroup()
                 .ifPresent(
                         slotSharingGroup -> {
@@ -567,6 +575,7 @@ public class StreamGraphGenerator {
                         });
 
         // call at least once to trigger exceptions about MissingTypeInfo
+        // tips 至少调用一次触发 MissingTypeInfo 异常的函数（但是前面处理transformation的时候不是已经调用过了吗）
         transform.getOutputType();
 
         @SuppressWarnings("unchecked")
@@ -576,6 +585,7 @@ public class StreamGraphGenerator {
 
         Collection<Integer> transformedIds;
         if (translator != null) {
+            // tips 核心逻辑：StreamGraph添加StreamNode添加StreamEdge
             transformedIds = translate(translator, transform);
         } else {
             transformedIds = legacyTransform(transform);
@@ -825,6 +835,7 @@ public class StreamGraphGenerator {
         checkNotNull(translator);
         checkNotNull(transform);
 
+        // tips InputId
         final List<Collection<Integer>> allInputIds = getParentInputIds(transform.getInputs());
 
         // the recursive call might have already transformed this
@@ -846,6 +857,7 @@ public class StreamGraphGenerator {
 
         return shouldExecuteInBatchMode
                 ? translator.translateForBatch(transform, context)
+                // tips 这里好像只区分了 非sink/sink 算子
                 : translator.translateForStreaming(transform, context);
     }
 
