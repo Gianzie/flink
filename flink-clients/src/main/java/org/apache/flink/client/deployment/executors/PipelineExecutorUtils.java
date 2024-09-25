@@ -55,8 +55,10 @@ public class PipelineExecutorUtils {
         checkNotNull(pipeline);
         checkNotNull(configuration);
 
+        // tips 可以访问底层相关的执行配置访问器？
         final ExecutionConfigAccessor executionConfigAccessor =
                 ExecutionConfigAccessor.fromConfiguration(configuration);
+        // tips enter
         final JobGraph jobGraph =
                 FlinkPipelineTranslationUtil.getJobGraph(
                         userClassloader,

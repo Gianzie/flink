@@ -2072,6 +2072,7 @@ public class StreamExecutionEnvironment implements AutoCloseable {
         }
 
         try {
+            // tips execute
             return execute(streamGraph);
         } catch (Throwable t) {
             Optional<ClusterDatasetCorruptedException> clusterDatasetCorruptedException =
@@ -2098,6 +2099,7 @@ public class StreamExecutionEnvironment implements AutoCloseable {
      */
     @Internal
     public JobExecutionResult execute(StreamGraph streamGraph) throws Exception {
+        // tips enter
         final JobClient jobClient = executeAsync(streamGraph);
 
         try {
@@ -2208,9 +2210,11 @@ public class StreamExecutionEnvironment implements AutoCloseable {
     @Internal
     public JobClient executeAsync(StreamGraph streamGraph) throws Exception {
         checkNotNull(streamGraph, "StreamGraph cannot be null.");
+        // tips app模式下使用EmbeddedExecutor（构建Dispatcher组件时，ApplicationDispatcherBootstrap new EmbeddedExecutorServiceLoader()）
         final PipelineExecutor executor = getPipelineExecutor();
 
         CompletableFuture<JobClient> jobClientFuture =
+                // tips enter
                 executor.execute(streamGraph, configuration, userClassloader);
 
         try {

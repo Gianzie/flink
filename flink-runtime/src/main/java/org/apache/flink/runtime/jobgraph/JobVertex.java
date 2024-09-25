@@ -521,11 +521,13 @@ public class JobVertex implements java.io.Serializable {
             IntermediateDataSetID intermediateDataSetId,
             boolean isBroadcast) {
 
+        // tips IntermediateDataSet开始出现
         IntermediateDataSet dataSet =
                 input.getOrCreateResultDataSet(intermediateDataSetId, partitionType);
 
         JobEdge edge = new JobEdge(dataSet, this, distPattern, isBroadcast);
         this.inputs.add(edge);
+        // tips 中间数据集的消费者：后面的JobEdge
         dataSet.addConsumer(edge);
         return edge;
     }

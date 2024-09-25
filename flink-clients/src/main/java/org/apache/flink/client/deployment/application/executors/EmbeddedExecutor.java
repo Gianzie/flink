@@ -85,6 +85,7 @@ public class EmbeddedExecutor implements PipelineExecutor {
 
     @Override
     public CompletableFuture<JobClient> execute(
+            // tips StreamGraph强转成了Pipeline
             final Pipeline pipeline,
             final Configuration configuration,
             ClassLoader userCodeClassloader)
@@ -101,6 +102,7 @@ public class EmbeddedExecutor implements PipelineExecutor {
             return getJobClientFuture(optJobId.get(), userCodeClassloader);
         }
 
+        // tips 提交运行
         return submitAndGetJobClientFuture(pipeline, configuration, userCodeClassloader);
     }
 
@@ -119,6 +121,7 @@ public class EmbeddedExecutor implements PipelineExecutor {
         final Time timeout =
                 Time.milliseconds(configuration.get(ClientOptions.CLIENT_TIMEOUT).toMillis());
 
+        // tips 生成JobGraph
         final JobGraph jobGraph =
                 PipelineExecutorUtils.getJobGraph(pipeline, configuration, userCodeClassloader);
         final JobID actualJobId = jobGraph.getJobID();
