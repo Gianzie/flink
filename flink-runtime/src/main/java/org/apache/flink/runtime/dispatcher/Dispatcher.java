@@ -338,7 +338,7 @@ public abstract class Dispatcher extends FencedRpcEndpoint<DispatcherId>
         }
 
         startCleanupRetries();
-        // tips 启动需要恢复的作业，这里启动了JobMaster
+        // tips 启动需要恢复的作业（如果有需要恢复的作业，才会在这里启动JobMaster，否则是在env.execute()逻辑执行）
         startRecoveredJobs();
 
         this.dispatcherBootstrap =
@@ -377,7 +377,7 @@ public abstract class Dispatcher extends FencedRpcEndpoint<DispatcherId>
 
     private void startRecoveredJobs() {
         for (JobGraph recoveredJob : recoveredJobs) {
-            // tips enter
+            // tips 如果待恢复作业不为空，enter
             runRecoveredJob(recoveredJob);
         }
         recoveredJobs.clear();
@@ -389,7 +389,7 @@ public abstract class Dispatcher extends FencedRpcEndpoint<DispatcherId>
         initJobClientExpiredTime(recoveredJob);
 
         try {
-            // tips 执行作业前创建了JobMaster
+            // tips 如果有待恢复作业，则执行作业前创建JobMaster，并声明执行类型为恢复模式
             runJob(createJobMasterRunner(recoveredJob), ExecutionType.RECOVERY);
         } catch (Throwable throwable) {
             onFatalError(
