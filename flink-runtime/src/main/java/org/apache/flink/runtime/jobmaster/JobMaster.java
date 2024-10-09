@@ -421,7 +421,7 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
     @Override
     protected void onStart() throws JobMasterException {
         try {
-            // tips
+            // tips enter
             startJobExecution();
         } catch (Exception e) {
             final JobMasterException jobMasterException =
@@ -971,12 +971,14 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
                     createResourceManagerHeartbeatManager(heartbeatServices);
 
             // start the slot pool make sure the slot pool now accepts messages for this leader
+            // tips 槽池启动分配slot
             slotPoolService.start(getFencingToken(), getAddress(), getMainThreadExecutor());
 
             // job is ready to go, try to establish connection with resource manager
             //   - activate leader retrieval for the resource manager
             //   - on notification of the leader, the connection will be established and
             //     the slot pool will start requesting slots
+            // tips 作业准备就绪，尝试与RM建立连接
             resourceManagerLeaderRetriever.start(new ResourceManagerLeaderListener());
         } catch (Exception e) {
             handleStartJobMasterServicesError(e);
@@ -1114,6 +1116,7 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
         resourceManagerAddress =
                 createResourceManagerAddress(newResourceManagerAddress, resourceManagerId);
 
+        // tips enter
         reconnectToResourceManager(
                 new FlinkException(
                         String.format(
@@ -1136,11 +1139,13 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
 
     private void reconnectToResourceManager(Exception cause) {
         closeResourceManagerConnection(cause);
+        // tips enter
         tryConnectToResourceManager();
     }
 
     private void tryConnectToResourceManager() {
         if (resourceManagerAddress != null) {
+            // tips enter
             connectToResourceManager();
         }
     }
@@ -1163,6 +1168,7 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
                         resourceManagerAddress.getResourceManagerId(),
                         futureExecutor);
 
+        // tips enter
         resourceManagerConnection.start();
     }
 
@@ -1294,6 +1300,7 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
         public void notifyLeaderAddress(final String leaderAddress, final UUID leaderSessionID) {
             runAsync(
                     () ->
+                            // tips enter
                             notifyOfNewResourceManagerLeader(
                                     leaderAddress,
                                     ResourceManagerId.fromUuidOrNull(leaderSessionID)));
@@ -1382,6 +1389,7 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
                         // filter out outdated connections
                         //noinspection ObjectEquality
                         if (this == resourceManagerConnection) {
+                            // tips 和RM建立连接
                             establishResourceManagerConnection(success);
                         }
                     });

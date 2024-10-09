@@ -49,7 +49,9 @@ public enum ClientUtils {
     public static void extractAndUploadJobGraphFiles(
             JobGraph jobGraph, SupplierWithException<BlobClient, IOException> clientSupplier)
             throws FlinkException {
+        // tips 用户jar
         List<Path> userJars = jobGraph.getUserJars();
+        // tips 用户资源文件
         Collection<Tuple2<String, Path>> userArtifacts =
                 jobGraph.getUserArtifacts().entrySet().stream()
                         .map(
@@ -59,6 +61,7 @@ public enum ClientUtils {
                                                 new Path(entry.getValue().filePath)))
                         .collect(Collectors.toList());
 
+        // tips 上传JobGraph相关文件
         uploadJobGraphFiles(jobGraph, userJars, userArtifacts, clientSupplier);
     }
 

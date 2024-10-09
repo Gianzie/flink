@@ -134,6 +134,7 @@ public class EmbeddedExecutor implements PipelineExecutor {
         }
 
         final CompletableFuture<JobID> jobSubmissionFuture =
+                // tips 提交作业
                 submitJob(configuration, dispatcherGateway, jobGraph, timeout);
 
         return jobSubmissionFuture
@@ -177,6 +178,7 @@ public class EmbeddedExecutor implements PipelineExecutor {
                 .thenCompose(
                         blobServerAddress -> {
                             try {
+                                // tips 提取出执行JobGraph所需要的所有jar和资源文件并上传到BlobServer中
                                 ClientUtils.extractAndUploadJobGraphFiles(
                                         jobGraph,
                                         () -> new BlobClient(blobServerAddress, configuration));
@@ -184,6 +186,7 @@ public class EmbeddedExecutor implements PipelineExecutor {
                                 throw new CompletionException(e);
                             }
 
+                            // tips 提交作业
                             return dispatcherGateway.submitJob(jobGraph, rpcTimeout);
                         })
                 .thenApply(ack -> jobGraph.getJobID());

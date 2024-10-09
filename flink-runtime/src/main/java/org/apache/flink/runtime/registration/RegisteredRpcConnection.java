@@ -102,6 +102,7 @@ public abstract class RegisteredRpcConnection<
                 !isConnected() && pendingRegistration == null,
                 "The RPC connection is already started");
 
+        // tips enter
         final RetryingRegistration<F, G, S, R> newRegistration = createNewRegistration();
 
         if (REGISTRATION_UPDATER.compareAndSet(this, null, newRegistration)) {
@@ -248,6 +249,7 @@ public abstract class RegisteredRpcConnection<
         future.whenCompleteAsync(
                 (RetryingRegistration.RetryingRegistrationResult<G, S, R> result,
                         Throwable failure) -> {
+                    // tips 有错误发生
                     if (failure != null) {
                         if (failure instanceof CancellationException) {
                             // we ignore cancellation exceptions because they originate from
@@ -264,6 +266,7 @@ public abstract class RegisteredRpcConnection<
                     } else {
                         if (result.isSuccess()) {
                             targetGateway = result.getGateway();
+                            // tips 注册成功的逻辑
                             onRegistrationSuccess(result.getSuccess());
                         } else if (result.isRejection()) {
                             onRegistrationRejection(result.getRejection());
