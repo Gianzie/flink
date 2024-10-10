@@ -512,6 +512,7 @@ public class ActiveResourceManager<WorkerType extends ResourceIDRetrievable>
                 pendingCount);
 
         final CompletableFuture<WorkerType> requestResourceFuture =
+                // tips 申请新的TaskExecutor容器
                 resourceManagerDriver.requestResource(taskExecutorProcessSpec);
         unallocatedWorkerFutures.put(requestResourceFuture, workerResourceSpec);
 

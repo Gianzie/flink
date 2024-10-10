@@ -376,6 +376,7 @@ public final class Utils {
 
         // now that all resources are prepared, we can create the launch context
 
+        // tips JobManager Logs中打印了该行
         log.info("Creating container launch context for TaskManagers");
 
         boolean hasLogback = new File(workingDirectory, "logback.xml").exists();
@@ -396,6 +397,7 @@ public final class Utils {
         if (log.isDebugEnabled()) {
             log.debug("Starting TaskManagers with command: " + launchCommand);
         } else {
+            // tips JobManager Logs中打印了该行
             log.info("Starting TaskManagers");
         }
 

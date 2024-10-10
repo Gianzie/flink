@@ -178,6 +178,7 @@ public class YarnResourceManagerDriver extends AbstractResourceManagerDriver<Yar
     @Override
     protected void initializeInternal() throws Exception {
         isRunning = true;
+        // tips 初始化Yarn容器事件处理器：在容器中异步启动了TaskExecutor
         final YarnContainerEventHandler yarnContainerEventHandler = new YarnContainerEventHandler();
         try {
             // tips flink创建YARNRMClient来和YARNRM交互申请资源（这里变量改个名字感觉更好）
@@ -347,6 +348,7 @@ public class YarnResourceManagerDriver extends AbstractResourceManagerDriver<Yar
                     .computeIfAbsent(taskExecutorProcessSpec, ignore -> new LinkedList<>())
                     .add(requestResourceFuture);
 
+            // tips JobManager Logs中打印了该行
             log.info(
                     "Requesting new TaskExecutor container with resource {}, priority {}.",
                     taskExecutorProcessSpec,
@@ -401,13 +403,16 @@ public class YarnResourceManagerDriver extends AbstractResourceManagerDriver<Yar
                 containers.size(),
                 priority.getPriority());
 
+        // tips TaskExecutor具体内存配置信息
         final TaskExecutorProcessSpec taskExecutorProcessSpec =
                 taskExecutorProcessSpecAndResourceOpt.get().getTaskExecutorProcessSpec();
+        // tips Yarn Resource：CPU、Memory
         final Resource resource = taskExecutorProcessSpecAndResourceOpt.get().getResource();
 
         final Queue<CompletableFuture<YarnWorkerNode>> pendingRequestResourceFutures =
                 requestResourceFutures.getOrDefault(taskExecutorProcessSpec, new LinkedList<>());
 
+        // tips JobManager Logs中打印了该行
         log.info(
                 "Received {} containers with priority {}, {} pending container requests.",
                 containers.size(),
@@ -436,7 +441,9 @@ public class YarnResourceManagerDriver extends AbstractResourceManagerDriver<Yar
             }
 
             requestResourceFuture.complete(new YarnWorkerNode(container, resourceId));
+            // tips 在container中异步启动TaskExecutor
             startTaskExecutorInContainerAsync(container, taskExecutorProcessSpec, resourceId);
+            // tips 删除容器请求
             removeContainerRequest(pendingRequest);
 
             numAccepted++;
@@ -448,6 +455,7 @@ public class YarnResourceManagerDriver extends AbstractResourceManagerDriver<Yar
             numExcess++;
         }
 
+        // tips JobManager Logs中打印了该行
         log.info(
                 "Accepted {} requested containers, returned {} excess containers, {} pending container requests of resource {}.",
                 numAccepted,
@@ -470,6 +478,7 @@ public class YarnResourceManagerDriver extends AbstractResourceManagerDriver<Yar
     }
 
     private void removeContainerRequest(AMRMClient.ContainerRequest pendingContainerRequest) {
+        // tips JobManager Logs中打印了该行
         log.info("Removing container request {}.", pendingContainerRequest);
         resourceManagerClient.removeContainerRequest(pendingContainerRequest);
     }
@@ -486,6 +495,7 @@ public class YarnResourceManagerDriver extends AbstractResourceManagerDriver<Yar
         final CompletableFuture<ContainerLaunchContext> containerLaunchContextFuture =
                 FutureUtils.supplyAsync(
                         () ->
+                                // tips 创建TaskExecutor启动上下文
                                 createTaskExecutorLaunchContext(
                                         resourceId,
                                         container.getNodeId().getHost(),
@@ -496,6 +506,7 @@ public class YarnResourceManagerDriver extends AbstractResourceManagerDriver<Yar
                 containerLaunchContextFuture.handleAsync(
                         (context, exception) -> {
                             if (exception == null) {
+                                // tips Hadoop's NodeManager客户端来启动容器，入口类为YarnTaskExecutorRunner
                                 nodeManagerClient.startContainerAsync(container, context);
                             } else {
                                 getResourceEventHandler()
@@ -535,6 +546,7 @@ public class YarnResourceManagerDriver extends AbstractResourceManagerDriver<Yar
         final ContaineredTaskManagerParameters taskManagerParameters =
                 ContaineredTaskManagerParameters.create(flinkConfig, taskExecutorProcessSpec);
 
+        // tips JobManager Logs中打印了该行
         log.info(
                 "TaskExecutor {} will be started on {} with {}.",
                 containerId.getStringWithMetadata(),
@@ -554,6 +566,7 @@ public class YarnResourceManagerDriver extends AbstractResourceManagerDriver<Yar
         log.debug("TaskManager configuration: {}", taskManagerConfig);
 
         final ContainerLaunchContext taskExecutorLaunchContext =
+                // tips 创建TaskExecutor上下文，入口类为YarnTaskExecutorRunner
                 Utils.createTaskExecutorContext(
                         flinkConfig,
                         yarnConfig,
@@ -683,10 +696,12 @@ public class YarnResourceManagerDriver extends AbstractResourceManagerDriver<Yar
             runAsyncWithFatalHandler(
                     () -> {
                         checkInitialized();
+                        // tips JobManager Logs中打印了该行
                         log.info("Received {} containers.", containers.size());
 
                         for (Map.Entry<Priority, List<Container>> entry :
                                 groupContainerByPriority(containers).entrySet()) {
+                            // tips 按优先级分配容器？
                             onContainersOfPriorityAllocated(entry.getKey(), entry.getValue());
                         }
 
