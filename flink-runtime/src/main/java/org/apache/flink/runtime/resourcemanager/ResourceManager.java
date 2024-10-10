@@ -390,6 +390,7 @@ public abstract class ResourceManager<WorkerType extends ResourceIDRetrievable>
             }
         }
 
+        // tips 正在注册JM到RM
         log.info(
                 "Registering job manager {}@{} for job {}.", jobMasterId, jobManagerAddress, jobId);
 
@@ -421,7 +422,9 @@ public abstract class ResourceManager<WorkerType extends ResourceIDRetrievable>
                 jobMasterGatewayFuture.thenCombineAsync(
                         jobMasterIdFuture,
                         (JobMasterGateway jobMasterGateway, JobMasterId leadingJobMasterId) -> {
+                            // tips id相同
                             if (Objects.equals(leadingJobMasterId, jobMasterId)) {
+                                // tips 注册JM
                                 return registerJobMasterInternal(
                                         jobMasterGateway,
                                         jobId,
@@ -583,6 +586,7 @@ public abstract class ResourceManager<WorkerType extends ResourceIDRetrievable>
                         .thenApply(
                                 acknowledge -> {
                                     validateRunsInMainThread();
+                                    // tips SlotManager处理资源的请求
                                     slotManager.processResourceRequirements(resourceRequirements);
                                     return null;
                                 });
@@ -970,6 +974,7 @@ public abstract class ResourceManager<WorkerType extends ResourceIDRetrievable>
             blocklistHandler.registerBlocklistListener(jobMasterGateway);
         }
 
+        // tips 注册JM到RM中
         log.info(
                 "Registered job manager {}@{} for job {}.",
                 jobMasterGateway.getFencingToken(),

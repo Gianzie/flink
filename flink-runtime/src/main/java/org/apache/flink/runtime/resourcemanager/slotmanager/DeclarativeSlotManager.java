@@ -285,6 +285,7 @@ public class DeclarativeSlotManager implements SlotManager {
 
     @Override
     public void processResourceRequirements(ResourceRequirements resourceRequirements) {
+        // tips 检查SlotManager是否启动
         checkInit();
         if (resourceRequirements.getResourceRequirements().isEmpty()
                 && resourceTracker.isRequirementEmpty(resourceRequirements.getJobId())) {
@@ -292,6 +293,7 @@ public class DeclarativeSlotManager implements SlotManager {
         } else if (resourceRequirements.getResourceRequirements().isEmpty()) {
             LOG.info("Clearing resource requirements of job {}", resourceRequirements.getJobId());
         } else {
+            // tips JobManager Logs中打印了该行
             LOG.info(
                     "Received resource requirements from job {}: {}",
                     resourceRequirements.getJobId(),
@@ -304,6 +306,7 @@ public class DeclarativeSlotManager implements SlotManager {
         }
         resourceTracker.notifyResourceRequirements(
                 resourceRequirements.getJobId(), resourceRequirements.getResourceRequirements());
+        // tips 这里调用到了ActiveResourceManager来请求worker
         checkResourceRequirementsWithDelay();
     }
 
@@ -439,6 +442,7 @@ public class DeclarativeSlotManager implements SlotManager {
      * are performed with a slight delay.
      */
     private void checkResourceRequirementsWithDelay() {
+        // tips requirementsCheckDelay 默认50ms
         if (requirementsCheckDelay.toMillis() <= 0) {
             checkResourceRequirements();
         } else {
@@ -448,6 +452,7 @@ public class DeclarativeSlotManager implements SlotManager {
                         () ->
                                 mainThreadExecutor.execute(
                                         () -> {
+                                            // tips enter
                                             checkResourceRequirements();
                                             Preconditions.checkNotNull(requirementsCheckFuture)
                                                     .complete(null);
@@ -521,6 +526,7 @@ public class DeclarativeSlotManager implements SlotManager {
         for (Map.Entry<JobID, ResourceCounter> unfulfilledRequirement :
                 unfulfilledRequirements.entrySet()) {
             freePendingSlots =
+                    // tips 尝试使用挂起的slot来分配资源
                     tryFulfillRequirementsWithPendingSlots(
                             unfulfilledRequirement.getKey(),
                             unfulfilledRequirement.getValue().getResourcesWithCount(),
@@ -710,6 +716,7 @@ public class DeclarativeSlotManager implements SlotManager {
                 pendingSlots = matchingResult.getNewAvailableResources();
                 if (!matchingResult.isSuccessfulMatching()) {
                     final WorkerAllocationResult allocationResult =
+                            // tips 尝试分配worker并预留slot
                             tryAllocateWorkerAndReserveSlot(profile, pendingSlots);
                     pendingSlots = allocationResult.getNewAvailableResources();
                     if (!allocationResult.isSuccessfulAllocating()
@@ -751,6 +758,7 @@ public class DeclarativeSlotManager implements SlotManager {
     private WorkerAllocationResult tryAllocateWorkerAndReserveSlot(
             ResourceProfile profile, ResourceCounter pendingSlots) {
         Optional<ResourceRequirement> newlyFulfillableRequirements =
+                // tips enter
                 taskExecutorManager.allocateWorker(profile);
         if (newlyFulfillableRequirements.isPresent()) {
             ResourceRequirement newSlots = newlyFulfillableRequirements.get();

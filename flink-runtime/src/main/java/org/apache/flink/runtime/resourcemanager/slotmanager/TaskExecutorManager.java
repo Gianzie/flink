@@ -289,6 +289,7 @@ class TaskExecutorManager implements AutoCloseable {
             pendingSlots.put(pendingTaskManagerSlot.getTaskManagerSlotId(), pendingTaskManagerSlot);
         }
 
+        // tips 延迟声明所需资源
         declareNeededResourcesWithDelay();
 
         return Optional.of(
@@ -324,6 +325,7 @@ class TaskExecutorManager implements AutoCloseable {
                         () ->
                                 mainThreadExecutor.execute(
                                         () -> {
+                                            // tips enter
                                             declareNeededResources();
                                             Preconditions.checkNotNull(declareNeededResourceFuture)
                                                     .complete(null);
@@ -336,6 +338,7 @@ class TaskExecutorManager implements AutoCloseable {
 
     /** DO NOT call this method directly. Use {@link #declareNeededResourcesWithDelay()} instead. */
     private void declareNeededResources() {
+        // tips enter
         resourceAllocator.declareResourceNeeded(getResourceDeclaration());
     }
 

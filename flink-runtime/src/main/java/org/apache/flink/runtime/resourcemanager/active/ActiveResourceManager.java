@@ -234,6 +234,7 @@ public class ActiveResourceManager<WorkerType extends ResourceIDRetrievable>
         this.resourceDeclarations = Collections.unmodifiableCollection(resourceDeclarations);
         log.debug("Update resource declarations to {}.", resourceDeclarations);
 
+        // tips enter
         checkResourceDeclarations();
     }
 
@@ -336,6 +337,7 @@ public class ActiveResourceManager<WorkerType extends ResourceIDRetrievable>
             WorkerResourceSpec workerResourceSpec = resourceDeclaration.getSpec();
             int declaredWorkerNumber = resourceDeclaration.getNumNeeded();
 
+            // tips 需要释放或请求的worker号：-1 = 当前worker号：0 - 声明的worker号：1
             final int releaseOrRequestWorkerNumber =
                     totalWorkerCounter.getNum(workerResourceSpec) - declaredWorkerNumber;
 
@@ -386,13 +388,16 @@ public class ActiveResourceManager<WorkerType extends ResourceIDRetrievable>
                 // Otherwise, ActiveResourceManager will always re-requesting the worker,
                 // which keeps the main thread busy.
                 if (startWorkerCoolDown.isDone()) {
+                    // tips 这里对 releaseOrRequestWorkerNumber 取反，得到的就是需要申请的worker数量？
                     int requestWorkerNumber = -releaseOrRequestWorkerNumber;
+                    // tips JobManager Logs中打印了该行
                     log.info(
                             "need request {} new workers, current worker number {}, declared worker number {}",
                             requestWorkerNumber,
                             totalWorkerCounter.getNum(workerResourceSpec),
                             declaredWorkerNumber);
                     for (int i = 0; i < requestWorkerNumber; i++) {
+                        // tips 分配worker
                         requestNewWorker(workerResourceSpec);
                     }
                 } else {
@@ -500,6 +505,7 @@ public class ActiveResourceManager<WorkerType extends ResourceIDRetrievable>
         final int pendingCount = pendingWorkerCounter.increaseAndGet(workerResourceSpec);
         totalWorkerCounter.increaseAndGet(workerResourceSpec);
 
+        // tips JobManager Logs中打印了该行
         log.info(
                 "Requesting new worker with resource spec {}, current pending count: {}.",
                 workerResourceSpec,
@@ -538,6 +544,7 @@ public class ActiveResourceManager<WorkerType extends ResourceIDRetrievable>
                                 workerResourceSpecs.put(resourceId, workerResourceSpec);
                                 currentAttemptUnregisteredWorkers.add(resourceId);
                                 scheduleWorkerRegistrationTimeoutCheck(resourceId);
+                                // tips JobManager Logs中打印了该行
                                 log.info(
                                         "Requested worker {} with resource spec {}.",
                                         resourceId.getStringWithMetadata(),
@@ -713,6 +720,7 @@ public class ActiveResourceManager<WorkerType extends ResourceIDRetrievable>
         @Override
         public void declareResourceNeeded(Collection<ResourceDeclaration> resourceDeclarations) {
             validateRunsInMainThread();
+            // tips enter declareResourceNeeded()
             ActiveResourceManager.this.declareResourceNeeded(resourceDeclarations);
         }
     }
