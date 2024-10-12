@@ -77,6 +77,7 @@ public class DefaultSchedulerFactory implements SchedulerNGFactory {
             final BlocklistOperations blocklistOperations)
             throws Exception {
 
+        // tips 创建了SlotPool
         final SlotPool slotPool =
                 slotPoolService
                         .castInto(SlotPool.class)
@@ -119,6 +120,7 @@ public class DefaultSchedulerFactory implements SchedulerNGFactory {
                         shuffleMaster,
                         partitionTracker);
 
+        // tips enter
         return new DefaultScheduler(
                 log,
                 jobGraph,

@@ -542,6 +542,7 @@ public abstract class SchedulerBase implements SchedulerNG, CheckpointScheduling
     }
 
     protected final void transitionToRunning() {
+        // tips enter
         executionGraph.transitionToRunning();
     }
 
@@ -604,6 +605,7 @@ public abstract class SchedulerBase implements SchedulerNG, CheckpointScheduling
     @Override
     public final void startScheduling() {
         mainThreadExecutor.assertRunningInMainThread();
+        // tips 注册作业指标
         registerJobMetrics(
                 jobManagerJobMetricGroup,
                 executionGraph,
@@ -612,7 +614,9 @@ public abstract class SchedulerBase implements SchedulerNG, CheckpointScheduling
                 executionGraph::registerJobStatusListener,
                 executionGraph.getStatusTimestamp(JobStatus.INITIALIZING),
                 jobStatusMetricsSettings);
+        // tips 算子协调处理器启动工作
         operatorCoordinatorHandler.startAllOperatorCoordinators();
+        // tips enter 启动调度程序
         startSchedulingInternal();
     }
 

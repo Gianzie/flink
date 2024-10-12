@@ -568,6 +568,7 @@ public class ExecutionVertex
         // only forward this notification if the execution is still the current execution
         // otherwise we have an outdated execution
         if (isCurrentExecution(execution)) {
+            // tips enter
             getExecutionGraphAccessor().notifyExecutionChange(execution, previousState, newState);
         }
     }

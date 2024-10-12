@@ -209,10 +209,13 @@ public class DefaultScheduler extends SchedulerBase implements SchedulerOperatio
 
     @Override
     protected void startSchedulingInternal() {
+        // tips JobManager Logs中打印了该行
         log.info(
                 "Starting scheduling with scheduling strategy [{}]",
                 schedulingStrategy.getClass().getName());
+        // tips ExecutionGraph过渡到running状态
         transitionToRunning();
+        // tips 启动调度，这里看PipelinedRegionSchedulingStrategy的实现
         schedulingStrategy.startScheduling();
     }
 
@@ -450,6 +453,7 @@ public class DefaultScheduler extends SchedulerBase implements SchedulerOperatio
                         .map(this::getCurrentExecutionOfVertex)
                         .collect(Collectors.toList());
 
+        // tips enter
         executionDeployer.allocateSlotsAndDeploy(executionsToDeploy, requiredVersionByVertex);
     }
 

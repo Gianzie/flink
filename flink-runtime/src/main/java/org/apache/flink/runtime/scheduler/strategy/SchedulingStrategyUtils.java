@@ -42,6 +42,7 @@ class SchedulingStrategyUtils {
 
         // Avoid the O(V) (V is the number of vertices in the topology) sorting
         // complexity if the given set of regions is small enough
+        // tips 如果给的region够小，主动降低排序复杂度
         if (regions.size() == 0) {
             return Collections.emptyList();
         } else if (regions.size() == 1) {

@@ -180,10 +180,15 @@ public class PipelinedRegionSchedulingStrategy implements SchedulingStrategy {
 
     @Override
     public void startScheduling() {
+        // tips 从调度拓扑图中得到SchedulingPipelinedRegion（调度管道化区域）
+        //  作用：
+        //  从JobGraph转换后的ExecutionGraph提取出没有数据阻塞依赖的任务，划分到同一个SchedulingPipelinedRegion
+        //  它们之间的数据传输可以通过管道化方式（不需要全部完成再数据传输）进行，从而加速整个任务的执行流程
         final Set<SchedulingPipelinedRegion> sourceRegions =
                 IterableUtils.toStream(schedulingTopology.getAllPipelinedRegions())
                         .filter(this::isSourceRegion)
                         .collect(Collectors.toSet());
+        // tips enter
         maybeScheduleRegions(sourceRegions);
     }
 
@@ -228,8 +233,10 @@ public class PipelinedRegionSchedulingStrategy implements SchedulingStrategy {
             nextRegions = addSchedulableAndGetNextRegions(nextRegions, regionsToSchedule);
         }
         // schedule regions in topological order.
+        // tips 按拓扑图顺序调度region
         SchedulingStrategyUtils.sortPipelinedRegionsInTopologicalOrder(
                         schedulingTopology, regionsToSchedule)
+                // tips 开始调度region，分配slot并部署
                 .forEach(this::scheduleRegion);
     }
 
@@ -284,6 +291,7 @@ public class PipelinedRegionSchedulingStrategy implements SchedulingStrategy {
                 areRegionVerticesAllInCreatedState(region),
                 "BUG: trying to schedule a region which is not in CREATED state");
         scheduledRegions.add(region);
+        // tips 分配slot并部署
         schedulerOperations.allocateSlotsAndDeploy(regionVerticesSorted.get(region));
     }
 

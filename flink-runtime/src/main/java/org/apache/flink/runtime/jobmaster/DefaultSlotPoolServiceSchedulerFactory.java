@@ -116,6 +116,7 @@ public final class DefaultSlotPoolServiceSchedulerFactory
             JobStatusListener jobStatusListener,
             BlocklistOperations blocklistOperations)
             throws Exception {
+        // tips enter
         return schedulerNGFactory.createInstance(
                 log,
                 jobGraph,
@@ -158,6 +159,7 @@ public final class DefaultSlotPoolServiceSchedulerFactory
         final SlotPoolServiceFactory slotPoolServiceFactory;
         final SchedulerNGFactory schedulerNGFactory;
 
+        // tips 这里得知调度类型为Default
         JobManagerOptions.SchedulerType schedulerType =
                 getSchedulerType(configuration, jobType, isDynamicGraph);
 

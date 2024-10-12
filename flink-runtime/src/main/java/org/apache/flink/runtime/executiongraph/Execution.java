@@ -523,8 +523,10 @@ public class Execution
         }
 
         // make sure exactly one deployment call happens from the correct state
+        // tips 这里的state为SCHEDULED
         ExecutionState previous = this.state;
         if (previous == SCHEDULED) {
+            // tips 这里 switched from SCHEDULED to DEPLOYING.
             if (!transitionState(previous, DEPLOYING)) {
                 // race condition, someone else beat us to the deploying call.
                 // this should actually not happen and indicates a race somewhere else
@@ -547,6 +549,7 @@ public class Execution
         try {
 
             // race double check, did we fail/cancel and do we need to release the slot?
+            // tips 二次检查，如果state不是DEPLOYING，释放slot
             if (this.state != DEPLOYING) {
                 slot.releaseSlot(
                         new FlinkException(
@@ -558,6 +561,7 @@ public class Execution
                 return;
             }
 
+            // tips JobManager Logs中打印了该行
             LOG.info(
                     "Deploying {} (attempt #{}) with attempt id {} and vertex id {} to {} with allocation id {}",
                     vertex.getTaskNameWithSubtaskIndex(),
@@ -567,6 +571,7 @@ public class Execution
                     getAssignedResourceLocation(),
                     slot.getAllocationId());
 
+            // tips 任务部署描述器（包含了在TM上部署所需要的所有信息）
             final TaskDeploymentDescriptor deployment =
                     TaskDeploymentDescriptorFactory.fromExecution(this)
                             .createDeploymentDescriptor(
@@ -587,6 +592,7 @@ public class Execution
             // does not block
             // the main thread and sync back to the main thread once submission is completed.
             CompletableFuture.supplyAsync(
+                    // tips 提交task
                             () -> taskManagerGateway.submitTask(deployment, rpcTimeout), executor)
                     .thenCompose(Function.identity())
                     .whenCompleteAsync(
@@ -1411,10 +1417,13 @@ public class Execution
     // --------------------------------------------------------------------------------------------
 
     public void transitionState(ExecutionState targetState) {
+        // tips enter
+        //  第一次调用时state=CREATED，targetState=SCHEDULED
         transitionState(state, targetState);
     }
 
     private boolean transitionState(ExecutionState currentState, ExecutionState targetState) {
+        // tips enter
         return transitionState(currentState, targetState, null);
     }
 
@@ -1430,11 +1439,18 @@ public class Execution
                             + '.');
         }
 
+        // tips
+        //  第一次调用时，state=都是CREATED，currentState=CREATED，targetState=SCHEDULED
+        //  第二次调用时，state=都是SCHEDULED，currentState=SCHEDULED，targetState=DEPLOYING
         if (state == currentState) {
+            // tips
+            //  第一次调用时，这里 switched from CREATED to SCHEDULED.
+            //  第二次调用时，这里 switched from SCHEDULED to DEPLOYING.
             state = targetState;
             markTimestamp(currentState, targetState);
 
             if (error == null) {
+                // tips JobManager Logs中打印了该行
                 LOG.info(
                         "{} ({}) switched from {} to {}.",
                         getVertex().getTaskNameWithSubtaskIndex(),
@@ -1462,6 +1478,7 @@ public class Execution
             // make sure that the state transition completes normally.
             // potential errors (in listeners may not affect the main logic)
             try {
+                // tips 确保状态可以正常过渡转换完（潜在错误在监听器中不会影响主逻辑），这里查看ExecutionVertex的实现
                 vertex.notifyStateTransition(this, currentState, targetState);
             } catch (Throwable t) {
                 LOG.error(

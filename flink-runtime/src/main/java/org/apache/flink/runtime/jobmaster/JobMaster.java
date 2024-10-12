@@ -345,6 +345,7 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
 
         this.jobManagerJobMetricGroup = jobMetricGroupFactory.create(jobGraph);
         this.jobStatusListener = new JobManagerJobStatusListener();
+        // tips schedulerNG（scheduler new generation）的初始化
         this.schedulerNG =
                 createScheduler(
                         slotPoolServiceSchedulerFactory,
@@ -369,6 +370,7 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
             JobStatusListener jobStatusListener)
             throws Exception {
         final SchedulerNG scheduler =
+                // tips enter
                 slotPoolServiceSchedulerFactory.createScheduler(
                         log,
                         jobGraph,
@@ -1047,6 +1049,7 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
     }
 
     private void startScheduling() {
+        // tips 初始化JobMaster时，确定schedulerType为Default，这里看SchedulerBase的实现
         schedulerNG.startScheduling();
     }
 

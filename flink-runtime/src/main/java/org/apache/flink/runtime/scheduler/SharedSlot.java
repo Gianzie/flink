@@ -143,6 +143,7 @@ class SharedSlot implements SlotOwner, PhysicalSlot.Payload {
         if (logicalSlotFuture != null) {
             LOG.debug("Request for {} already exists", getLogicalSlotString(executionVertexId));
         } else {
+            // tips enter
             logicalSlotFuture = allocateNonExistentLogicalSlot(executionVertexId);
         }
         return logicalSlotFuture.thenApply(Function.identity());
@@ -159,6 +160,7 @@ class SharedSlot implements SlotOwner, PhysicalSlot.Payload {
                 slotContextFuture.thenApply(
                         physicalSlot -> {
                             LOG.debug("Allocated {}", logMessageBase);
+                            // tips 创建逻辑槽
                             return createLogicalSlot(physicalSlot, logicalSlotRequestId);
                         });
         requestedLogicalSlots.put(executionVertexId, logicalSlotRequestId, logicalSlotFuture);

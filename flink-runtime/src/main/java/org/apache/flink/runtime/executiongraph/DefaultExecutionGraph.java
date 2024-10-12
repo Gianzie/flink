@@ -954,6 +954,7 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
 
     @Override
     public void transitionToRunning() {
+        // tips 正常执行返回true，取反不抛出异常
         if (!transitionState(JobStatus.CREATED, JobStatus.RUNNING)) {
             throw new IllegalStateException(
                     "Job may only be scheduled from state " + JobStatus.CREATED);
@@ -1127,6 +1128,7 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
 
     @Override
     public boolean transitionState(JobStatus current, JobStatus newState) {
+        // tips enter
         return transitionState(current, newState, null);
     }
 
@@ -1144,8 +1146,11 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
         }
 
         // now do the actual state transition
+        // tips 第一次正常启动程序时，state和current都是CREATED
         if (state == current) {
+            // tips 这里 job switched from state CREATED to RUNNING
             state = newState;
+            // tips JobManager Logs中打印了该行
             LOG.info(
                     "Job {} ({}) switched from state {} to {}.",
                     getJobName(),
@@ -1627,6 +1632,7 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
             final Execution execution,
             ExecutionState previousState,
             final ExecutionState newExecutionState) {
+        // tips 这里查看DeploymentStateTimeMetrics的实现
         executionStateUpdateListener.onStateUpdate(
                 execution.getAttemptId(), previousState, newExecutionState);
     }

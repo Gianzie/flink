@@ -117,6 +117,7 @@ class SlotSharingExecutionSlotAllocator implements ExecutionSlotAllocator {
                         .map(ExecutionAttemptID::getExecutionVertexId)
                         .collect(Collectors.toList());
 
+        // tips 为顶点分配slot
         return allocateSlotsForVertices(vertexIds).stream()
                 .map(
                         vertexAssignment ->
@@ -162,12 +163,14 @@ class SlotSharingExecutionSlotAllocator implements ExecutionSlotAllocator {
                                         slotSharingStrategy::getExecutionSlotSharingGroup));
         Map<ExecutionSlotSharingGroup, SharedSlot> slots =
                 executionsByGroup.keySet().stream()
+                        // tips 从sharedSlots中直接get or 分配新的ShareSlot
                         .map(group -> getOrAllocateSharedSlot(group, sharedSlotProfileRetriever))
                         .collect(
                                 Collectors.toMap(
                                         SharedSlot::getExecutionSlotSharingGroup,
                                         Function.identity()));
         Map<ExecutionVertexID, SlotExecutionVertexAssignment> assignments =
+                // tips 从共享槽中分配逻辑槽
                 allocateLogicalSlotsFromSharedSlots(slots, executionsByGroup);
 
         // we need to pass the slots map to the createBulk method instead of using the allocator's
@@ -215,6 +218,7 @@ class SlotSharingExecutionSlotAllocator implements ExecutionSlotAllocator {
 
             for (ExecutionVertexID executionId : executionIds) {
                 CompletableFuture<LogicalSlot> logicalSlotFuture =
+                        // tips 为每个ExecutionVertex分配逻辑槽
                         slots.get(group).allocateLogicalSlot(executionId);
                 SlotExecutionVertexAssignment assignment =
                         new SlotExecutionVertexAssignment(executionId, logicalSlotFuture);

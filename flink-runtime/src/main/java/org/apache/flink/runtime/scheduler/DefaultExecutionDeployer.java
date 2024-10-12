@@ -90,17 +90,22 @@ public class DefaultExecutionDeployer implements ExecutionDeployer {
     public void allocateSlotsAndDeploy(
             final List<Execution> executionsToDeploy,
             final Map<ExecutionVertexID, ExecutionVertexVersion> requiredVersionByVertex) {
+        // tips 校验是否为CREATED状态
         validateExecutionStates(executionsToDeploy);
 
+        // tips 将状态从CREATED过渡为SCHEDULED
         transitionToScheduled(executionsToDeploy);
 
+        // tips 为拓扑图中的每个ExecutionVertex分配LogicSlot
         final List<ExecutionSlotAssignment> executionSlotAssignments =
                 allocateSlotsFor(executionsToDeploy);
 
+        // tips 执行部署句柄（将要部署的execution、顶点的映射、execution的槽分配信息 关联封装起来进行部署）
         final List<ExecutionDeploymentHandle> deploymentHandles =
                 createDeploymentHandles(
                         executionsToDeploy, requiredVersionByVertex, executionSlotAssignments);
 
+        // tips 开始部署工作
         waitForAllSlotsAndDeploy(deploymentHandles);
     }
 
@@ -115,6 +120,7 @@ public class DefaultExecutionDeployer implements ExecutionDeployer {
     }
 
     private void transitionToScheduled(final List<Execution> executionsToDeploy) {
+        // tips 将每个execution状态修改为SCHEDULED
         executionsToDeploy.forEach(e -> e.transitionState(ExecutionState.SCHEDULED));
     }
 
@@ -124,6 +130,7 @@ public class DefaultExecutionDeployer implements ExecutionDeployer {
                 executionsToDeploy.stream()
                         .map(Execution::getAttemptId)
                         .collect(Collectors.toList());
+        // tips enter，这里看SlotSharingExecutionSlotAllocator的实现
         return executionSlotAllocator.allocateSlotsFor(executionAttemptIds);
     }
 
@@ -152,6 +159,7 @@ public class DefaultExecutionDeployer implements ExecutionDeployer {
     private void waitForAllSlotsAndDeploy(final List<ExecutionDeploymentHandle> deploymentHandles) {
         FutureUtils.assertNoException(
                 assignAllResourcesAndRegisterProducedPartitions(deploymentHandles)
+                        // tips enter
                         .handle(deployAll(deploymentHandles)));
     }
 
@@ -188,6 +196,7 @@ public class DefaultExecutionDeployer implements ExecutionDeployer {
                 checkState(slotAssigned.isDone());
 
                 FutureUtils.assertNoException(
+                        // tips 部署或者处理错误
                         slotAssigned.handle(deployOrHandleError(deploymentHandle)));
             }
             return null;
@@ -307,6 +316,7 @@ public class DefaultExecutionDeployer implements ExecutionDeployer {
             }
 
             if (throwable == null) {
+                // tips 程序正常运行走这里
                 deployTaskSafe(execution);
             } else {
                 handleTaskDeploymentFailure(execution, throwable);
@@ -317,6 +327,7 @@ public class DefaultExecutionDeployer implements ExecutionDeployer {
 
     private void deployTaskSafe(final Execution execution) {
         try {
+            // tips enter
             executionOperations.deploy(execution);
         } catch (Throwable e) {
             handleTaskDeploymentFailure(execution, e);
