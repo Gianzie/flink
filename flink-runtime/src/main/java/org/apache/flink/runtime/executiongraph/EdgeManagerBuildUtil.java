@@ -47,6 +47,9 @@ public class EdgeManagerBuildUtil {
      */
     static void connectVertexToResult(
             ExecutionJobVertex vertex, IntermediateResult intermediateResult) {
+        // tips 数据分发模式
+        //  POINTWISE：生产者每个子任务连接到消费者一/多个子任务
+        //  ALL_TO_ALL：生产者每个子任务都连接到消费者每个子任务
         final DistributionPattern distributionPattern =
                 intermediateResult.getConsumingDistributionPattern();
         final JobVertexInputInfo jobVertexInputInfo =
@@ -118,8 +121,10 @@ public class EdgeManagerBuildUtil {
 
         Map<IndexRange, List<Integer>> consumersByPartition = new LinkedHashMap<>();
 
+        // tips 遍历所有ExecutionVertex
         for (ExecutionVertexInputInfo executionVertexInputInfo :
                 jobVertexInputInfo.getExecutionVertexInputInfos()) {
+            // tips 每个ExecutionVertex的索引序号
             int consumerIndex = executionVertexInputInfo.getSubtaskIndex();
             IndexRange range = executionVertexInputInfo.getPartitionIndexRange();
             consumersByPartition.compute(
@@ -143,6 +148,7 @@ public class EdgeManagerBuildUtil {
                     for (int i = range.getStartIndex(); i <= range.getEndIndex(); ++i) {
                         partitions.add(result.getPartitions()[i]);
                     }
+                    // tips 连接ExecutionVertex和IntermediateResultPartition
                     connectInternal(
                             taskVertices,
                             partitions,
@@ -160,21 +166,27 @@ public class EdgeManagerBuildUtil {
         checkState(!taskVertices.isEmpty());
         checkState(!partitions.isEmpty());
 
+        // tips 创建和注册IntermediateResultPartitionId到EdgeManager
         ConsumedPartitionGroup consumedPartitionGroup =
                 createAndRegisterConsumedPartitionGroupToEdgeManager(
                         taskVertices.size(), partitions, resultPartitionType, edgeManager);
+        // tips 遍历ExecutionVertex集合，将consumedPartitionGroup添加到ExecutionVertex
         for (ExecutionVertex ev : taskVertices) {
             ev.addConsumedPartitionGroup(consumedPartitionGroup);
         }
 
+        // tips ExecutionVertexId集合
         List<ExecutionVertexID> consumerVertices =
                 taskVertices.stream().map(ExecutionVertex::getID).collect(Collectors.toList());
+        // tips ExecutionVertexId消费者组
         ConsumerVertexGroup consumerVertexGroup =
                 ConsumerVertexGroup.fromMultipleVertices(consumerVertices, resultPartitionType);
         for (IntermediateResultPartition partition : partitions) {
+            // tips 为每个IntermediateResultPartition添加ExecutionVertexId消费者组
             partition.addConsumers(consumerVertexGroup);
         }
 
+        // tips vertex和partition分别作为参数添加到对方的消费者组中
         consumedPartitionGroup.setConsumerVertexGroup(consumerVertexGroup);
         consumerVertexGroup.setConsumedPartitionGroup(consumedPartitionGroup);
     }
@@ -188,10 +200,13 @@ public class EdgeManagerBuildUtil {
                 partitions.stream()
                         .map(IntermediateResultPartition::getPartitionId)
                         .collect(Collectors.toList());
+        // tips 消费IntermediateResultPartition的组
         ConsumedPartitionGroup consumedPartitionGroup =
                 ConsumedPartitionGroup.fromMultiplePartitions(
                         numConsumers, partitionIds, resultPartitionType);
+        // tips 当task状态为finished时，标记consumedPartitionGroup中的IntermediateResultPartition数量-1
         finishAllDataProducedPartitions(partitions, consumedPartitionGroup);
+        // tips 注册IntermediateResultPartitionId到EdgeManager
         edgeManager.registerConsumedPartitionGroup(consumedPartitionGroup);
         return consumedPartitionGroup;
     }

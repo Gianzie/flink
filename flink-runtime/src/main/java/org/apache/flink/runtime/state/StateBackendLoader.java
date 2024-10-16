@@ -260,6 +260,7 @@ public class StateBackendLoader {
                 // (3) use the default
                 backend = new HashMapStateBackendFactory().createFromConfig(config, classLoader);
                 if (logger != null) {
+                    // tips JobManager Logs中打印了该行
                     logger.info(
                             "No state backend has been configured, using default (HashMap) {}",
                             backend);
@@ -298,6 +299,7 @@ public class StateBackendLoader {
             @Nullable Logger logger)
             throws IllegalConfigurationException, DynamicCodeLoadingException, IOException {
 
+        // tips 默认使用HashMapStateBackend
         StateBackend rootBackend =
                 loadFromApplicationOrConfigOrDefaultInternal(
                         fromApplication, config, classLoader, logger);
@@ -318,6 +320,7 @@ public class StateBackendLoader {
                     rootBackend.getClass().getSimpleName());
         } else {
             backend = rootBackend;
+            // tips JobManager Logs中打印了该行
             LOG.info(
                     "State backend loader loads the state backend as {}",
                     backend.getClass().getSimpleName());

@@ -206,6 +206,7 @@ public abstract class SchedulerBase implements SchedulerNG, CheckpointScheduling
         this.deploymentStateTimeMetrics =
                 new DeploymentStateTimeMetrics(jobGraph.getJobType(), jobStatusMetricsSettings);
 
+        // tips 创建和恢复（from savepoint）ExecutionGraph
         this.executionGraph =
                 createAndRestoreExecutionGraph(
                         completedCheckpointStore,
@@ -361,6 +362,7 @@ public abstract class SchedulerBase implements SchedulerNG, CheckpointScheduling
             VertexParallelismStore vertexParallelismStore)
             throws Exception {
 
+        // tips enter
         final ExecutionGraph newExecutionGraph =
                 executionGraphFactory.createAndRestoreExecutionGraph(
                         jobGraph,
@@ -376,8 +378,10 @@ public abstract class SchedulerBase implements SchedulerNG, CheckpointScheduling
                         getMarkPartitionFinishedStrategy(),
                         log);
 
+        // tips 任务失败监听器
         newExecutionGraph.setInternalTaskFailuresListener(
                 new UpdateSchedulerNgOnInternalFailuresListener(this));
+        // tips 注册作业状态监听器
         newExecutionGraph.registerJobStatusListener(jobStatusListener);
         newExecutionGraph.start(mainThreadExecutor);
 

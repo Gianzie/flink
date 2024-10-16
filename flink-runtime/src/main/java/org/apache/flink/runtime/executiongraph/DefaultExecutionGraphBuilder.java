@@ -121,6 +121,7 @@ public class DefaultExecutionGraphBuilder {
         // create a new execution graph, if none exists so far
         final DefaultExecutionGraph executionGraph;
         try {
+            // tips 实例化DefaultExecutionGraph
             executionGraph =
                     new DefaultExecutionGraph(
                             jobInformation,
@@ -151,6 +152,7 @@ public class DefaultExecutionGraphBuilder {
         // set the basic properties
 
         try {
+            // tips 设置JsonPlan
             executionGraph.setJsonPlan(JsonPlanGenerator.generatePlan(jobGraph));
         } catch (Throwable t) {
             log.warn("Cannot create JSON plan for job", t);
@@ -162,9 +164,12 @@ public class DefaultExecutionGraphBuilder {
         // file output formats create directories here, input formats create splits
 
         final long initMasterStart = System.nanoTime();
+        // tips JobManager Logs中打印了该行
         log.info("Running initialization on master for job {} ({}).", jobName, jobId);
 
+        // tips 校验每个JobVertex是否有可执行类，并初始化钩子在master上？
         for (JobVertex vertex : jobGraph.getVertices()) {
+            // tips 算子调用类，比如map算子使用OneInputStreamTask
             String executableClass = vertex.getInvokableClassName();
             if (executableClass == null || executableClass.isEmpty()) {
                 throw new JobSubmissionException(
@@ -191,11 +196,13 @@ public class DefaultExecutionGraphBuilder {
             }
         }
 
+        // tips JobManager Logs中打印了该行
         log.info(
                 "Successfully ran initialization on master in {} ms.",
                 (System.nanoTime() - initMasterStart) / 1_000_000);
 
         // topologically sort the job vertices and attach the graph to the existing one
+        // tips 拓扑排序，得到按顺序排好的JobVertex
         List<JobVertex> sortedTopology = jobGraph.getVerticesSortedTopologicallyFromSources();
         if (log.isDebugEnabled()) {
             log.debug(
@@ -204,6 +211,12 @@ public class DefaultExecutionGraphBuilder {
                     jobName,
                     jobId);
         }
+        // tips 添加排好序的JobVertex到ExecutionGraph，并行化版的JobGraph
+        //  1、创建ExecutionJobVertex（子集：ExecutionVertex）
+        //  2、创建IntermediateResult（子集：IntermediateResultPartition）
+        //  3、ExecutionGraph中从1.13版本开始摒弃了ExecutionEdge，采用EdgeManager+ConsumerPartitionGroup的概念
+        //    来将使用相同结果分区的顶点归为一个组，这些优化使得ExecutionGraph的topology构建复杂度从O(N²)降低到O(N)
+        //  4、connect ConsumerPartitionGroup（EdgeManager）-ExecutionVertex-IntermediateResultPartition
         executionGraph.attachJobGraph(sortedTopology);
 
         if (log.isDebugEnabled()) {
@@ -216,10 +229,13 @@ public class DefaultExecutionGraphBuilder {
             // dynamic graph does not support checkpointing so we skip it
             log.warn("Skip setting up checkpointing for a job with dynamic graph.");
         } else if (isCheckpointingEnabled(jobGraph)) {
+            // tips ck相关的配置
             JobCheckpointingSettings snapshotSettings = jobGraph.getCheckpointingSettings();
 
             // load the state backend from the application settings
+            // tips 程序配置的状态后端？
             final StateBackend applicationConfiguredBackend;
+            // tips 该分支代码是noDefaultValue()，master已经是defaultValue("hashmap")
             final SerializedValue<StateBackend> serializedAppConfigured =
                     snapshotSettings.getDefaultStateBackend();
 
@@ -235,8 +251,10 @@ public class DefaultExecutionGraphBuilder {
                 }
             }
 
+            // tips root状态后端？
             final StateBackend rootBackend;
             try {
+                // tips 默认使用HashMapStateBackend
                 rootBackend =
                         StateBackendLoader.fromApplicationOrConfigOrDefault(
                                 applicationConfiguredBackend,
@@ -250,6 +268,7 @@ public class DefaultExecutionGraphBuilder {
             }
 
             // load the checkpoint storage from the application settings
+            // tips 程序配置的ck存储信息？默认null
             final CheckpointStorage applicationConfiguredStorage;
             final SerializedValue<CheckpointStorage> serializedAppConfiguredStorage =
                     snapshotSettings.getDefaultCheckpointStorage();
@@ -268,6 +287,7 @@ public class DefaultExecutionGraphBuilder {
                 }
             }
 
+            // tips root ck存储信息？默认存储到JM中
             final CheckpointStorage rootStorage;
             try {
                 rootStorage =
@@ -285,6 +305,7 @@ public class DefaultExecutionGraphBuilder {
 
             // instantiate the user-defined checkpoint hooks
 
+            // tips 用户自定义钩子
             final SerializedValue<MasterTriggerRestoreHook.Factory[]> serializedHooks =
                     snapshotSettings.getMasterHooks();
             final List<MasterTriggerRestoreHook<?>> hooks;
@@ -318,6 +339,7 @@ public class DefaultExecutionGraphBuilder {
                     snapshotSettings.getCheckpointCoordinatorConfiguration();
             String changelogStorage = jobManagerConfig.getString(STATE_CHANGE_LOG_STORAGE);
 
+            // tips 为ExecutionGraph配置ck相关参数
             executionGraph.enableCheckpointing(
                     chkConfig,
                     hooks,

@@ -215,6 +215,7 @@ public interface ExecutionGraph extends AccessExecutionGraph {
 
     default void initializeJobVertex(ExecutionJobVertex ejv, long createTimestamp)
             throws JobException {
+        // tips enter
         initializeJobVertex(
                 ejv,
                 createTimestamp,

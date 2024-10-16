@@ -56,6 +56,7 @@ public class JsonPlanGenerator {
             };
 
     public static String generatePlan(JobGraph jg) {
+        // tips enter
         return generatePlan(
                 jg.getJobID(),
                 jg.getName(),
@@ -84,21 +85,26 @@ public class JsonPlanGenerator {
             gen.writeArrayFieldStart("nodes");
 
             // info per vertex
+            // tips 遍历JobGraph的每个JobVertex
             for (JobVertex vertex : vertices) {
 
+                // tips 算子名称
                 String operator =
                         vertex.getOperatorName() != null ? vertex.getOperatorName() : NOT_SET;
 
+                // tips 算子描述
                 String operatorDescr =
                         vertex.getOperatorDescription() != null
                                 ? vertex.getOperatorDescription()
                                 : NOT_SET;
 
+                // tips 优化配置参数
                 String optimizerProps =
                         vertex.getResultOptimizerProperties() != null
                                 ? vertex.getResultOptimizerProperties()
                                 : EMPTY;
 
+                // tips 描述：算子别名？
                 String description =
                         vertex.getOperatorPrettyName() != null
                                 ? vertex.getOperatorPrettyName()
@@ -125,10 +131,12 @@ public class JsonPlanGenerator {
                 gen.writeStringField("operator_strategy", operatorDescr);
                 gen.writeStringField("description", description);
 
+                // tips 非输入顶点
                 if (!vertex.isInputVertex()) {
                     // write the input edge properties
                     gen.writeArrayFieldStart("inputs");
 
+                    // tips vertex的InEdge
                     List<JobEdge> inputs = vertex.getInputs();
                     for (int inputNum = 0; inputNum < inputs.size(); inputNum++) {
                         JobEdge edge = inputs.get(inputNum);
@@ -136,10 +144,14 @@ public class JsonPlanGenerator {
                             continue;
                         }
 
+                        // tips 通过InEdge找到intermediateDataSet再找到上游JobVertex
                         JobVertex predecessor = edge.getSource().getProducer();
 
+                        // tips 数据传入策略（forward、rebalance）
                         String shipStrategy = edge.getShipStrategyName();
+                        // tips 上游算子的名称
                         String preProcessingOperation = edge.getPreProcessingOperationName();
+                        // tips 算子缓存描述？
                         String operatorLevelCaching = edge.getOperatorLevelCachingDescription();
 
                         gen.writeStartObject();

@@ -159,6 +159,7 @@ public class DefaultExecutionGraphFactory implements ExecutionGraphFactory {
                     }
                 };
 
+        // tips 构建ExecutionGraph
         final ExecutionGraph newExecutionGraph =
                 DefaultExecutionGraphBuilder.buildGraph(
                         jobGraph,
@@ -186,6 +187,7 @@ public class DefaultExecutionGraphFactory implements ExecutionGraphFactory {
                         markPartitionFinishedStrategy,
                         nonFinishedHybridPartitionShouldBeUnknown);
 
+        // tips ck协调器
         final CheckpointCoordinator checkpointCoordinator =
                 newExecutionGraph.getCheckpointCoordinator();
 
@@ -195,6 +197,7 @@ public class DefaultExecutionGraphFactory implements ExecutionGraphFactory {
                     new HashSet<>(newExecutionGraph.getAllVertices().values()))) {
 
                 // check whether we can restore from a savepoint
+                // tips 从savepoint恢复的逻辑
                 tryRestoreExecutionGraphFromSavepoint(
                         newExecutionGraph, jobGraph.getSavepointRestoreSettings());
             }

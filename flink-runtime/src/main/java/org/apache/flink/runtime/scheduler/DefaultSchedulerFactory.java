@@ -107,6 +107,7 @@ public class DefaultSchedulerFactory implements SchedulerNGFactory {
                 jobGraph.getName(),
                 jobGraph.getJobID());
 
+        // tips ExecutionGraph工厂类，为ExecutionGraph的生成做准备
         final ExecutionGraphFactory executionGraphFactory =
                 new DefaultExecutionGraphFactory(
                         jobMasterConfiguration,

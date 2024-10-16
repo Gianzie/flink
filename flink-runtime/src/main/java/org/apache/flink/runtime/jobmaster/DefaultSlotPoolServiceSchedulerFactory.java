@@ -116,7 +116,7 @@ public final class DefaultSlotPoolServiceSchedulerFactory
             JobStatusListener jobStatusListener,
             BlocklistOperations blocklistOperations)
             throws Exception {
-        // tips enter
+        // tips enter 这里看DefaultSchedulerFactory实现
         return schedulerNGFactory.createInstance(
                 log,
                 jobGraph,

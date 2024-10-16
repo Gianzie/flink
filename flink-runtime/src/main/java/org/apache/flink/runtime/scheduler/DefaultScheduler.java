@@ -133,6 +133,7 @@ public class DefaultScheduler extends SchedulerBase implements SchedulerOperatio
             final ExecutionDeployer.Factory executionDeployerFactory)
             throws Exception {
 
+        // tips enter（ExecutionGraph）
         super(
                 log,
                 jobGraph,
@@ -161,6 +162,7 @@ public class DefaultScheduler extends SchedulerBase implements SchedulerOperatio
         final FailoverStrategy failoverStrategy =
                 failoverStrategyFactory.create(
                         getSchedulingTopology(), getResultPartitionAvailabilityChecker());
+        // tips JobManager Logs中打印了该行
         log.info(
                 "Using failover strategy {} for {} ({}).",
                 failoverStrategy,

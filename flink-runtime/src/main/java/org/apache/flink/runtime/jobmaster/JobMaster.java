@@ -311,6 +311,7 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
         final String jobName = jobGraph.getName();
         final JobID jid = jobGraph.getJobID();
 
+        // tips JobManager Logs中打印了该行
         log.info("Initializing job '{}' ({}).", jobName, jid);
 
         resourceManagerLeaderRetriever =
@@ -346,6 +347,7 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
         this.jobManagerJobMetricGroup = jobMetricGroupFactory.create(jobGraph);
         this.jobStatusListener = new JobManagerJobStatusListener();
         // tips schedulerNG（scheduler new generation）的初始化
+        //  这里包含了ExecutionGraph的生成
         this.schedulerNG =
                 createScheduler(
                         slotPoolServiceSchedulerFactory,

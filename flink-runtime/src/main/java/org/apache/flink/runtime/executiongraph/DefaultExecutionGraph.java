@@ -403,6 +403,7 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
 
         this.nonFinishedHybridPartitionShouldBeUnknown = nonFinishedHybridPartitionShouldBeUnknown;
 
+        // tips JobManager Logs中打印了该行
         LOG.info(
                 "Created execution graph {} for job {}.",
                 executionGraphId,
@@ -847,14 +848,18 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
                 tasks.size(),
                 intermediateResults.size());
 
+        // tips 根据JobVertex创建添加ExecutionJobVertex，还未初始化
         attachJobVertices(verticesToAttach);
         if (!isDynamic) {
+            // tips 初始化JobVertex：创建ExecutionJobVertex，IntermediateResult并相连
             initializeJobVertices(verticesToAttach);
         }
 
         // the topology assigning should happen before notifying new vertices to failoverStrategy
+        // tips 从ExecutionGraph生成调度拓扑，用于正确顺序调度
         executionTopology = DefaultExecutionTopology.fromExecutionGraph(this);
 
+        // tips 何时释放partitionGroup的策略（默认RegionPartitionGroupReleaseStrategy实现）
         partitionGroupReleaseStrategy =
                 partitionGroupReleaseStrategyFactory.createInstance(getSchedulingTopology());
     }
@@ -867,10 +872,12 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
                 this.isStoppable = false;
             }
 
+            // tips 提取出该JobVertex的并行度
             VertexParallelismInformation parallelismInfo =
                     parallelismStore.getParallelismInfo(jobVertex.getID());
 
             // create the execution job vertex and attach it to the graph
+            // tips 创建ExecutionJobVertex，和JobVertex并行度一致
             ExecutionJobVertex ejv =
                     executionJobVertexFactory.createExecutionJobVertex(
                             this, jobVertex, parallelismInfo);
@@ -883,7 +890,9 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
                                 jobVertex.getID(), ejv, previousTask));
             }
 
+            // tips 存放所有ExecutionJobVertex的集合
             this.verticesInCreationOrder.add(ejv);
+            // tips JobVertex总数
             this.numJobVerticesTotal++;
         }
     }
@@ -893,6 +902,7 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
 
         for (JobVertex jobVertex : topologicallySorted) {
             final ExecutionJobVertex ejv = tasks.get(jobVertex.getID());
+            // tips enter
             initializeJobVertex(ejv, createTimestamp);
         }
     }
@@ -909,8 +919,13 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
 
         jobVertexInputInfos.forEach(
                 (resultId, info) ->
+                        // tips 三个参数：JobVertexId、IntermediateDataSetId、JobVertexInputInfo
                         this.vertexInputInfoStore.put(ejv.getJobVertexId(), resultId, info));
 
+        // tips 这里开始体现出ExecutionGraph是JobGraph的并行化转换
+        //  1、创建并行度个数的ExecutionVertex（相当于ExecutionJobVertex的子集）
+        //  2、创建IntermediateResult对应IntermediateDataSet
+        //  3、创建IntermediateResultPartition与ExecutionVertex一一对应（相当于IntermediateResult的子集）
         ejv.initialize(
                 executionHistorySizeLimit,
                 rpcTimeout,
@@ -918,6 +933,7 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
                 this.initialAttemptCounts.getAttemptCounts(ejv.getJobVertexId()),
                 coordinatorStore);
 
+        // tips 连接了ExecutionJobVertex和IntermediateResult（本质是连接ExecutionVertex和IntermediateResultPartition）
         ejv.connectToPredecessors(this.intermediateResults);
 
         for (IntermediateResult res : ejv.getProducedDataSets()) {
@@ -931,11 +947,13 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
             }
         }
 
+        // tips 为executionVerticesById和resultPartitionById赋值
         registerExecutionVerticesAndResultPartitionsFor(ejv);
 
         // enrich network memory.
         SlotSharingGroup slotSharingGroup = ejv.getSlotSharingGroup();
         if (areJobVerticesAllInitialized(slotSharingGroup)) {
+            // tips 如果slot共享组中vertex初始化了，就丰富网络内存？
             SsgNetworkMemoryCalculationUtils.enrichNetworkMemory(
                     slotSharingGroup, this::getJobVertex, shuffleMaster);
         }

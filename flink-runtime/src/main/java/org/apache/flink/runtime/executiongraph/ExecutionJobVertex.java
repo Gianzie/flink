@@ -166,14 +166,18 @@ public class ExecutionJobVertex
         checkState(parallelismInfo.getParallelism() > 0);
         checkState(!isInitialized());
 
+        // tips 数组（ExecutionVertex）：创建了 并行度个数的ExecutionVertex数组，这里体现了ExecutionGraph是JobGraph的并行化版本
         this.taskVertices = new ExecutionVertex[parallelismInfo.getParallelism()];
 
+        // tips 集合（IntermediateResult）：这里还是IntermediateResult集合，还未分区
         this.inputs = new ArrayList<>(jobVertex.getInputs().size());
 
         // create the intermediate results
+        // tips 数组（IntermediateResult）：根据JobVertex的IntermediateDataSet个数，创建对应的IntermediateResult数组
         this.producedDataSets =
                 new IntermediateResult[jobVertex.getNumberOfProducedIntermediateDataSets()];
 
+        // tips 将每个JobVertex的每个IntermediateDataSet依次存入ExecutionVertex的IntermediateResult
         for (int i = 0; i < jobVertex.getProducedDataSets().size(); i++) {
             final IntermediateDataSet result = jobVertex.getProducedDataSets().get(i);
 
@@ -186,8 +190,10 @@ public class ExecutionJobVertex
         }
 
         // create all task vertices
+        // tips 根据并行度创建出相应个数的ExecutionVertex
         for (int i = 0; i < this.parallelismInfo.getParallelism(); i++) {
             ExecutionVertex vertex =
+                    // tips 创建ExecutionVertex时，创建了IntermediateResult和相对应的IntermediateResultPartition
                     createExecutionVertex(
                             this,
                             i,
@@ -203,6 +209,7 @@ public class ExecutionJobVertex
         // sanity check for the double referencing between intermediate result partitions and
         // execution vertices
         for (IntermediateResult ir : this.producedDataSets) {
+            // tips 校验IntermediateResultPartition应该和并行度数量一致
             if (ir.getNumberOfAssignedPartitions() != this.parallelismInfo.getParallelism()) {
                 throw new RuntimeException(
                         "The intermediate result's partitions were not correctly assigned.");
@@ -233,6 +240,7 @@ public class ExecutionJobVertex
 
         // set up the input splits, if the vertex has any
         try {
+            // tips source是否进行了切片来并行处理
             @SuppressWarnings("unchecked")
             InputSplitSource<InputSplit> splitSource =
                     (InputSplitSource<InputSplit>) jobVertex.getInputSplitSource();
@@ -268,6 +276,7 @@ public class ExecutionJobVertex
             long createTimestamp,
             int executionHistorySizeLimit,
             int initialAttemptCount) {
+        // tips enter
         return new ExecutionVertex(
                 jobVertex,
                 subTaskIndex,
@@ -442,6 +451,7 @@ public class ExecutionJobVertex
             throws JobException {
         checkState(isInitialized());
 
+        // tips JobVertex的所有InEdge
         List<JobEdge> inputs = jobVertex.getInputs();
 
         if (LOG.isDebugEnabled()) {
@@ -478,6 +488,7 @@ public class ExecutionJobVertex
             // fetch the intermediate result via ID. if it does not exist, then it either has not
             // been created, or the order
             // in which this method is called for the job vertices is not a topological order
+            // tips 通过 与InEdge相连的IntermediateDataSetId 进而得到 IntermediateResult
             IntermediateResult ires = intermediateDataSets.get(edge.getSourceId());
             if (ires == null) {
                 throw new JobException(
@@ -485,8 +496,10 @@ public class ExecutionJobVertex
                                 + edge.getSourceId());
             }
 
+            // tips 将正确的IntermediateResult存入到集合中
             this.inputs.add(ires);
 
+            // tips 连接ExecutionJobVertex和IntermediateResult
             EdgeManagerBuildUtil.connectVertexToResult(this, ires);
         }
     }

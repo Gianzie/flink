@@ -432,7 +432,9 @@ public class JobGraph implements Serializable {
             return Collections.emptyList();
         }
 
+        // tips 用来存要返回的JobVertex的数据结构
         List<JobVertex> sorted = new ArrayList<JobVertex>(this.taskVertices.size());
+        // tips 用来遍历所有JobVertex
         Set<JobVertex> remaining = new LinkedHashSet<JobVertex>(this.taskVertices.values());
 
         // start by finding the vertices with no input edges
@@ -442,6 +444,9 @@ public class JobGraph implements Serializable {
             while (iter.hasNext()) {
                 JobVertex vertex = iter.next();
 
+                // tips 如果该JobVertex没有和Edge相连
+                //  则将该vertex放入到sorted中，即目前这里只有source算子，后续会将其他算子也放入
+                //  剩余的vertex即为非source算子
                 if (vertex.hasNoConnectedInputs()) {
                     sorted.add(vertex);
                     iter.remove();
@@ -452,6 +457,7 @@ public class JobGraph implements Serializable {
         int startNodePos = 0;
 
         // traverse from the nodes that were added until we found all elements
+        // tips 剩余的则为非source算子，正常情况下while循环执行一次即可，与remaining长度无关
         while (!remaining.isEmpty()) {
 
             // first check if we have more candidates to start traversing from. if not, then the
@@ -460,7 +466,9 @@ public class JobGraph implements Serializable {
                 throw new InvalidProgramException("The job graph is cyclic.");
             }
 
+            // tips 取出source列表中的第一个vertex
             JobVertex current = sorted.get(startNodePos++);
+            // tips 传递第一个source，sorted，remaining
             addNodesThatHaveNoNewPredecessors(current, sorted, remaining);
         }
 
@@ -471,34 +479,48 @@ public class JobGraph implements Serializable {
             JobVertex start, List<JobVertex> target, Set<JobVertex> remaining) {
 
         // forward traverse over all produced data sets and all their consumers
+        // tips 这里只以source + map（第二个算子）为例
+        // tips 取出source算子的IntermediateDataSet
         for (IntermediateDataSet dataSet : start.getProducedDataSets()) {
+            // tips 取出IntermediateDataSet的每个OutEdge
             for (JobEdge edge : dataSet.getConsumers()) {
 
                 // a vertex can be added, if it has no predecessors that are still in the
                 // 'remaining' set
+                // tips map算子
                 JobVertex v = edge.getTarget();
+                // tips 如果remaining不包含map，跳出循环
                 if (!remaining.contains(v)) {
                     continue;
                 }
 
                 boolean hasNewPredecessors = false;
 
+                // tips map的所有InEdge
                 for (JobEdge e : v.getInputs()) {
                     // skip the edge through which we came
+                    // tips 如果map的InEdge = source的OutEdge，跳出循环（正常情况好像一定会跳出？）
                     if (e == edge) {
                         continue;
                     }
 
+                    // tips map的上游IntermediateDataSet
                     IntermediateDataSet source = e.getSource();
+                    // tips 如果remaining包含source算子，将hasNewPredecessors标记为true，并中断循环
+                    //  正常情况下remaining中不应该包含source算子
                     if (remaining.contains(source.getProducer())) {
                         hasNewPredecessors = true;
                         break;
                     }
                 }
 
+                // tips 如果remaining中至始至终不包含source算子，则进入下面逻辑
                 if (!hasNewPredecessors) {
+                    // tips 将map算子添加到sorted中
                     target.add(v);
+                    // tips 从remaining中移除map算子
                     remaining.remove(v);
+                    // tips 递归调用，将map算子后续的算子添加到sorted中
                     addNodesThatHaveNoNewPredecessors(v, target, remaining);
                 }
             }

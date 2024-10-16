@@ -125,9 +125,11 @@ public class ExecutionVertex
                         subTaskIndex + 1,
                         jobVertex.getParallelism());
 
+        // tips IntermediateResult下的IntermediateResultPartition初始化结构
         this.resultPartitions = new LinkedHashMap<>(producedDataSets.length, 1);
 
         for (IntermediateResult result : producedDataSets) {
+            // tips 遍历IntermediateResult数组，创建出IntermediateResultPartition存入到对应的IntermediateResult
             IntermediateResultPartition irp =
                     new IntermediateResultPartition(
                             result,

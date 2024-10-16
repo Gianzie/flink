@@ -1724,6 +1724,7 @@ public class CheckpointCoordinator {
                 return OptionalLong.empty();
             }
 
+            // tips JobManager Logs中打印了该行
             LOG.info("Restoring job {} from {}.", job, latest);
 
             this.forceFullSnapshot = latest.getProperties().isUnclaimed();

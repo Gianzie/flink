@@ -100,6 +100,8 @@ public class DefaultJobMasterServiceFactory implements JobMasterServiceFactory {
     private JobMasterService internalCreateJobMasterService(
             UUID leaderSessionId, OnCompletionActions onCompletionActions) throws Exception {
 
+        // tips 创建JobMasterService
+        //  这里初始化了SlotPool、SchedulerNG（内部生成ExecutionGraph）
         final JobMaster jobMaster =
                 new JobMaster(
                         rpcService,
