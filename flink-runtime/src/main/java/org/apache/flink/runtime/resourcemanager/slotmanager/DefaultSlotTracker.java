@@ -75,6 +75,7 @@ public class DefaultSlotTracker implements SlotTracker {
         Preconditions.checkNotNull(resourceProfile);
         Preconditions.checkNotNull(taskManagerConnection);
 
+        // tips 如果注册过的slot集合中有该slot，remove掉
         if (slots.containsKey(slotId)) {
             // remove the old slot first
             LOG.debug(
@@ -85,8 +86,11 @@ public class DefaultSlotTracker implements SlotTracker {
 
         DeclarativeTaskManagerSlot slot =
                 new DeclarativeTaskManagerSlot(slotId, resourceProfile, taskManagerConnection);
+        // tips 添加slot到已注册列表
         slots.put(slotId, slot);
+        // tips 添加slot到空闲列表
         freeSlots.put(slotId, slot);
+        // tips 过渡修改slot状态，分别记录free、pending、allocated的slot信息
         slotStatusStateReconciler.executeStateTransition(slot, assignedJob);
     }
 

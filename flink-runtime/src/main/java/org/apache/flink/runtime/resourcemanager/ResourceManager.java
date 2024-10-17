@@ -513,16 +513,20 @@ public abstract class ResourceManager<WorkerType extends ResourceIDRetrievable>
 
         if (workerTypeWorkerRegistration.getInstanceID().equals(taskManagerRegistrationId)) {
             SlotManager.RegistrationResult registrationResult =
+                    // tips 1.17版本看DeclarativeSlotManager实现：确定所有slot的状态free、pending、allocated，得到注册结果
                     slotManager.registerTaskManager(
                             workerTypeWorkerRegistration,
                             slotReport,
                             workerTypeWorkerRegistration.getTotalResourceProfile(),
                             workerTypeWorkerRegistration.getDefaultSlotResourceProfile());
+            // tips 注册成功
             if (registrationResult == SlotManager.RegistrationResult.SUCCESS) {
+                // tips worker资源规格（cpu、内存、slot）
                 WorkerResourceSpec workerResourceSpec =
                         WorkerResourceSpec.fromTotalResourceProfile(
                                 workerTypeWorkerRegistration.getTotalResourceProfile(),
                                 slotReport.getNumSlotStatus());
+                // tips noop
                 onWorkerRegistered(workerTypeWorkerRegistration.getWorker(), workerResourceSpec);
             } else if (registrationResult == SlotManager.RegistrationResult.REJECTED) {
                 closeTaskManagerConnection(

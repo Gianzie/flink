@@ -231,12 +231,15 @@ public class TaskSlotTableImpl<T extends TaskSlotPayload> implements TaskSlotTab
     public SlotReport createSlotReport(ResourceID resourceId) {
         List<SlotStatus> slotStatuses = new ArrayList<>();
 
+        // tips numberSlots：配置文件中的taskmanager.numberOfTaskSlots，默认1
         for (int i = 0; i < numberSlots; i++) {
             SlotID slotId = new SlotID(resourceId, i);
             SlotStatus slotStatus;
+            // tips 如果taskSlots有某个slot，则代表该slot已被分配
             if (taskSlots.containsKey(i)) {
                 TaskSlot<T> taskSlot = taskSlots.get(i);
 
+                // tips 已分配的slotStatus
                 slotStatus =
                         new SlotStatus(
                                 slotId,
@@ -244,13 +247,17 @@ public class TaskSlotTableImpl<T extends TaskSlotPayload> implements TaskSlotTab
                                 taskSlot.getJobId(),
                                 taskSlot.getAllocationId());
             } else {
+                // tips 未分配的slotStatus
                 slotStatus = new SlotStatus(slotId, defaultSlotResourceProfile, null, null);
             }
 
             slotStatuses.add(slotStatus);
         }
 
+        // tips Map<AllocationID, TaskSlot<T>> allocatedSlots：已经配分的slot和id的映射关系
         for (TaskSlot<T> taskSlot : allocatedSlots.values()) {
+            // tips 每个slot的index must be in [0, numberSlots)
+            //  如果超出范围，则代表是numberSlots之外的slot，属于动态分配，将该slot add到slotStatuses
             if (isDynamicIndex(taskSlot.getIndex())) {
                 SlotStatus slotStatus =
                         new SlotStatus(

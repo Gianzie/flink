@@ -96,11 +96,13 @@ public class TaskExecutorToResourceManagerConnection
 
     @Override
     protected void onRegistrationSuccess(TaskExecutorRegistrationSuccess success) {
+        // tips TaskManager Logs中打印了该行
         log.info(
                 "Successful registration at resource manager {} under registration id {}.",
                 getTargetAddress(),
                 success.getRegistrationId());
 
+        // tips 注册监听器通知TaskExecutor已经注册成功到ResourceManager
         registrationListener.onRegistrationSuccess(this, success);
     }
 

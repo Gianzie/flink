@@ -34,6 +34,7 @@ public class TaskExecutorToServiceAdapter implements TaskManagerRunner.TaskExecu
 
     @Override
     public void start() {
+        // tips enter
         taskExecutor.start();
     }
 

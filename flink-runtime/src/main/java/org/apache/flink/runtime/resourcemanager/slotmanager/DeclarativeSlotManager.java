@@ -355,6 +355,7 @@ public class DeclarativeSlotManager implements SlotManager {
 
             // register the new slots
             for (SlotStatus slotStatus : initialSlotReport) {
+                // tips 过渡修改slot状态，分别记录free、pending、allocated的slot信息
                 slotTracker.addSlot(
                         slotStatus.getSlotID(),
                         slotStatus.getResourceProfile(),
@@ -362,6 +363,7 @@ public class DeclarativeSlotManager implements SlotManager {
                         slotStatus.getJobID());
             }
 
+            // tips 检查资源需求（和JobMaster的逻辑一样，为什么都要执行这一段？）
             checkResourceRequirementsWithDelay();
             return RegistrationResult.SUCCESS;
         }

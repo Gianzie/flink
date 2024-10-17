@@ -77,6 +77,7 @@ public class ResourceManagerRuntimeServices {
             SlotManagerMetricGroup slotManagerMetricGroup) {
         final SlotManagerConfiguration slotManagerConfiguration =
                 configuration.getSlotManagerConfiguration();
+        // tips 1.18版本开始默认为细粒度的槽管理器
         if (configuration.isEnableFineGrainedResourceManagement()) {
             return new FineGrainedSlotManager(
                     scheduledExecutor,
@@ -91,6 +92,7 @@ public class ResourceManagerRuntimeServices {
                                     slotManagerConfiguration.getDefaultWorkerResourceSpec()),
                             slotManagerConfiguration.getNumSlotsPerWorker()));
         } else {
+            // tips 1.17版本看该实现
             return new DeclarativeSlotManager(
                     scheduledExecutor,
                     slotManagerConfiguration,
