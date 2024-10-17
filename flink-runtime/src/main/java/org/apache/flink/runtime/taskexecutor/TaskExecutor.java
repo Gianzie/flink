@@ -301,6 +301,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
             TaskExecutorPartitionTracker partitionTracker,
             DelegationTokenReceiverRepository delegationTokenReceiverRepository) {
 
+        // tips 初始化RPC服务，后续可以通信
         super(rpcService, RpcServiceUtils.createRandomName(TASK_MANAGER_NAME));
 
         checkArgument(
@@ -335,6 +336,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
 
         this.hardwareDescription =
                 HardwareDescription.extractFromSystem(taskExecutorServices.getManagedMemorySize());
+        // tips TaskManager内存模型
         this.memoryConfiguration =
                 TaskExecutorMemoryConfiguration.create(taskManagerConfiguration.getConfiguration());
 

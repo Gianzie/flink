@@ -246,6 +246,7 @@ public class TaskManagerRunner implements FatalErrorHandler {
                     new DelegationTokenReceiverRepository(configuration, pluginManager);
 
             taskExecutorService =
+                    // tips 这一行和new TaskManagerRunner() 执行顺序？
                     taskExecutorServiceFactory.createTaskExecutor(
                             this.configuration,
                             this.resourceId.unwrap(),
@@ -290,7 +291,10 @@ public class TaskManagerRunner implements FatalErrorHandler {
 
     public void start() throws Exception {
         synchronized (lock) {
+            // tips 启动TaskManagerRunner服务，给变量赋值
+            //  RPC、高可用、心跳服务、指标注册、blob存储...
             startTaskManagerRunnerServices();
+            // tips 启动TaskExecutor服务
             taskExecutorService.start();
         }
     }
@@ -478,11 +482,19 @@ public class TaskManagerRunner implements FatalErrorHandler {
         final TaskManagerRunner taskManagerRunner;
 
         try {
+            // tips 通过配置文件、插件管理器、TaskExecutor来创建TaskManagerRunner
             taskManagerRunner =
                     new TaskManagerRunner(
                             configuration,
                             pluginManager,
+                            // tips 创建TaskExecutor（RPC、内存模型、指标统计...）
+                            //  TaskManagerRunner::createTaskExecutorService是一个方法引用，作为参数传给了TaskManagerRunner构造器
+                            //  构造器会保存这个引用，但并没有立即执行该方法，方法createTaskExecutorService()实际执行会在稍后逻辑中启动
+                            //  所以真正的执行顺序是taskManagerRunner.start()显示调用
+                            //  然后在startTaskManagerRunnerServices()中初始化并调用createTaskExecutorService方法。
+                            //  如果不使用lambda表达式而使用传统匿名内部类的话，这里其实new TaskExecutorServiceFactory()只需要return null
                             TaskManagerRunner::createTaskExecutorService);
+            // tips 启动
             taskManagerRunner.start();
         } catch (Exception exception) {
             throw new FlinkException("Failed to start the TaskManagerRunner.", exception);
@@ -512,8 +524,10 @@ public class TaskManagerRunner implements FatalErrorHandler {
 
     public static void runTaskManagerProcessSecurely(Configuration configuration) {
         FlinkSecurityManager.setFromConfiguration(configuration);
+        // tips PluginManager负责管理那些使用单独类加载器的插件，防止它们的依赖影响flink的依赖
         final PluginManager pluginManager =
                 PluginUtils.createPluginManagerFromRootFolder(configuration);
+        // tips 初始化文件系统
         FileSystem.initialize(configuration, pluginManager);
 
         StateChangelogStorageLoader.initialize(pluginManager);
@@ -527,6 +541,7 @@ public class TaskManagerRunner implements FatalErrorHandler {
 
             exitCode =
                     SecurityUtils.getInstalledContext()
+                            // tips runTaskManager
                             .runSecured(() -> runTaskManager(configuration, pluginManager));
         } catch (Throwable t) {
             throwable = ExceptionUtils.stripException(t, UndeclaredThrowableException.class);
@@ -562,6 +577,7 @@ public class TaskManagerRunner implements FatalErrorHandler {
             throws Exception {
 
         final TaskExecutor taskExecutor =
+                // tips 构建了TaskExecutor（但和start好像并无太大关系，难道start是指rpc？）
                 startTaskManager(
                         configuration,
                         resourceID,
@@ -599,13 +615,17 @@ public class TaskManagerRunner implements FatalErrorHandler {
         checkNotNull(rpcService);
         checkNotNull(highAvailabilityServices);
 
+        // tips TaskManager Logs中打印了该行
         LOG.info("Starting TaskManager with ResourceID: {}", resourceID.getStringWithMetadata());
 
+        // tips 外部通信地址
         String externalAddress = rpcService.getAddress();
 
+        // tips TaskExecutor资源规格（不是TaskManager内存模型）
         final TaskExecutorResourceSpec taskExecutorResourceSpec =
                 TaskExecutorResourceUtils.resourceSpecFromConfig(configuration);
 
+        // tips TaskManager相关配置，如内存管理器、IO管理器、指标注册、内外部地址&端口等
         TaskManagerServicesConfiguration taskManagerServicesConfiguration =
                 TaskManagerServicesConfiguration.fromConfiguration(
                         configuration,
@@ -615,6 +635,7 @@ public class TaskManagerRunner implements FatalErrorHandler {
                         taskExecutorResourceSpec,
                         workingDirectory);
 
+        // tips TM指标组
         Tuple2<TaskManagerMetricGroup, MetricGroup> taskManagerMetricGroup =
                 MetricUtils.instantiateTaskManagerMetricGroup(
                         metricRegistry,
@@ -622,11 +643,13 @@ public class TaskManagerRunner implements FatalErrorHandler {
                         resourceID,
                         taskManagerServicesConfiguration.getSystemResourceMetricsProbingInterval());
 
+        // tips IO执行器
         final ExecutorService ioExecutor =
                 Executors.newFixedThreadPool(
                         taskManagerServicesConfiguration.getNumIoThreads(),
                         new ExecutorThreadFactory("flink-taskexecutor-io"));
 
+        // tips TaskExecutor的容器，用于统一管理一些组件，关闭TM时通过shutdown()来关闭组件
         TaskManagerServices taskManagerServices =
                 TaskManagerServices.fromConfiguration(
                         taskManagerServicesConfiguration,
@@ -636,11 +659,13 @@ public class TaskManagerRunner implements FatalErrorHandler {
                         fatalErrorHandler,
                         workingDirectory);
 
+        // tips 初始化flink内存指标
         MetricUtils.instantiateFlinkMemoryMetricGroup(
                 taskManagerMetricGroup.f1,
                 taskManagerServices.getTaskSlotTable(),
                 taskManagerServices::getManagedMemorySize);
 
+        // tips TE的配置对象，比如slot、超时时间、日志、资源等信息
         TaskManagerConfiguration taskManagerConfiguration =
                 TaskManagerConfiguration.fromConfiguration(
                         configuration,
@@ -650,6 +675,7 @@ public class TaskManagerRunner implements FatalErrorHandler {
 
         String metricQueryServiceAddress = metricRegistry.getMetricQueryServiceGatewayRpcAddress();
 
+        // tips 创建TaskExecutor（初始化RPC、内存模型...）
         return new TaskExecutor(
                 rpcService,
                 taskManagerConfiguration,

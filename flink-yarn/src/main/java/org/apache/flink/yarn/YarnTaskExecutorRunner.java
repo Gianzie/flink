@@ -61,10 +61,12 @@ public class YarnTaskExecutorRunner {
      * @param args The command line arguments.
      */
     public static void main(String[] args) {
+        // tips 打印环境信息
         EnvironmentInformation.logEnvironmentInfo(LOG, "YARN TaskExecutor runner", args);
         SignalHandler.register(LOG);
         JvmShutdownSafeguard.installAsShutdownHook(LOG);
 
+        // tips enter
         runTaskManagerSecurely(args);
     }
 
@@ -82,8 +84,10 @@ public class YarnTaskExecutorRunner {
             LOG.debug("All environment variables: {}", ENV);
 
             final String currDir = ENV.get(Environment.PWD.key());
+            // tips TaskManager Logs中打印了该行
             LOG.info("Current working Directory: {}", currDir);
 
+            // tips 从配置文件和动态参数中生成一份后续用的配置文件
             configuration = TaskManagerRunner.loadConfiguration(args);
             setupAndModifyConfiguration(configuration, currDir, ENV);
         } catch (Throwable t) {
@@ -91,6 +95,7 @@ public class YarnTaskExecutorRunner {
             System.exit(INIT_ERROR_EXIT_CODE);
         }
 
+        // tips 运行TaskManager进程
         TaskManagerRunner.runTaskManagerProcessSecurely(Preconditions.checkNotNull(configuration));
     }
 
