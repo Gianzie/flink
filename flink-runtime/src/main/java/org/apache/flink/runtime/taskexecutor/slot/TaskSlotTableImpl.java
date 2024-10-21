@@ -304,10 +304,13 @@ public class TaskSlotTableImpl<T extends TaskSlotPayload> implements TaskSlotTab
                         ? defaultSlotResourceProfile
                         : resourceProfile;
 
+        // tips 查询已分配slot集合中是否有该分配id
         TaskSlot<T> taskSlot = allocatedSlots.get(allocationId);
         if (taskSlot != null) {
+            // tips 不为空代表重复使用slot
             return isDuplicatedSlot(taskSlot, jobId, effectiveResourceProfile, index);
         } else if (isIndexAlreadyTaken(index)) {
+            // tips 查询该slot的index是否已经被占用
             LOG.info(
                     "The slot with index {} is already assigned to another allocation with id {}.",
                     index,
@@ -325,6 +328,7 @@ public class TaskSlotTableImpl<T extends TaskSlotPayload> implements TaskSlotTab
             return false;
         }
 
+        // tips TaskSlot状态初始化为ALLOCATED
         taskSlot =
                 new TaskSlot<>(
                         index,
@@ -342,6 +346,7 @@ public class TaskSlotTableImpl<T extends TaskSlotPayload> implements TaskSlotTab
         timerService.registerTimeout(allocationId, slotTimeout.getSize(), slotTimeout.getUnit());
 
         // add this slot to the set of job slots
+        // tips private final Map<JobID, Set<AllocationID>> slotsPerJob;
         Set<AllocationID> slots = slotsPerJob.get(jobId);
 
         if (slots == null) {
@@ -383,6 +388,7 @@ public class TaskSlotTableImpl<T extends TaskSlotPayload> implements TaskSlotTab
         TaskSlot<T> taskSlot = getTaskSlot(allocationId);
 
         if (taskSlot != null) {
+            // tips enter
             return markExistingSlotActive(taskSlot);
         } else {
             throw new SlotNotFoundException(allocationId);
@@ -390,8 +396,10 @@ public class TaskSlotTableImpl<T extends TaskSlotPayload> implements TaskSlotTab
     }
 
     private boolean markExistingSlotActive(TaskSlot<T> taskSlot) {
+        // tips enter
         if (taskSlot.markActive()) {
             // unregister a potential timeout
+            // tips TaskManager Logs中打印了该行
             LOG.info("Activate slot {}.", taskSlot.getAllocationId());
 
             timerService.unregisterTimeout(taskSlot.getAllocationId());

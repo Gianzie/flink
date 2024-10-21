@@ -76,6 +76,7 @@ class JobScopedResourceTracker {
         final Optional<ResourceProfile> matchingRequirement =
                 findMatchingRequirement(resourceProfile);
         if (matchingRequirement.isPresent()) {
+            // tips 如果匹配上资源需求，则维护 满足资源请求&满足请求的资源 两个数据结构并计数
             resourceToRequirementMapping.incrementCount(
                     matchingRequirement.get(), resourceProfile, 1);
         } else {

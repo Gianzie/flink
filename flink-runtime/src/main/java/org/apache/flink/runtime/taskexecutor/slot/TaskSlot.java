@@ -239,7 +239,9 @@ public class TaskSlot<T extends TaskSlotPayload> implements AutoCloseableAsync {
      * @return True if the new state of the slot is active; otherwise false
      */
     public boolean markActive() {
+        // tips TaskSlot初始化时，状态为ALLOCATED
         if (TaskSlotState.ALLOCATED == state || TaskSlotState.ACTIVE == state) {
+            // tips 将状态切换为ACTIVE
             state = TaskSlotState.ACTIVE;
 
             return true;

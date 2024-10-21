@@ -71,6 +71,7 @@ public class DefaultResourceTracker implements ResourceTracker {
                 "Received notification for job {} having acquired resource {}.",
                 jobId,
                 resourceProfile);
+        // tips enter
         getOrCreateTracker(jobId).notifyAcquiredResource(resourceProfile);
     }
 

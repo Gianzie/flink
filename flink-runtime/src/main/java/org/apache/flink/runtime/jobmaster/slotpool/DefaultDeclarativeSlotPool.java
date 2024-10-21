@@ -184,6 +184,8 @@ public class DefaultDeclarativeSlotPool implements DeclarativeSlotPool {
 
         log.debug("Received {} slot offers from TaskExecutor {}.", offers, taskManagerLocation);
 
+        // tips 目的是为了match SlotOffer and OutstandingRequirements
+        //  如果能够匹配上，就为这些未满足的需求来分配slot
         return internalOfferSlots(
                 offers,
                 taskManagerLocation,
@@ -198,15 +200,20 @@ public class DefaultDeclarativeSlotPool implements DeclarativeSlotPool {
             TaskManagerGateway taskManagerGateway,
             long currentTime,
             Function<ResourceProfile, Optional<ResourceProfile>> matchingCondition) {
+        // tips 已接收的slotOffer
         final Collection<SlotOffer> acceptedSlotOffers = new ArrayList<>();
+        // tips 已接收的slot
         final Collection<AllocatedSlot> acceptedSlots = new ArrayList<>();
 
+        // tips 这个遍历是为了match SlotOffer and OutstandingRequirements，如果能够匹配上，则为请求分配slot
         for (SlotOffer offer : offers) {
+            // tips 如果slotPool包含该SlotOffer's slot，则添加到acceptedSlotOffers中
             if (slotPool.containsSlot(offer.getAllocationId())) {
                 // we have already accepted this offer
                 acceptedSlotOffers.add(offer);
             } else {
                 Optional<AllocatedSlot> acceptedSlot =
+                        // tips 将SlotOffer与未满足的要求进行匹配，如果有，则增加满足资源请求count，并创建已分配slot列表
                         matchOfferWithOutstandingRequirements(
                                 offer, taskManagerLocation, taskManagerGateway, matchingCondition);
                 if (acceptedSlot.isPresent()) {

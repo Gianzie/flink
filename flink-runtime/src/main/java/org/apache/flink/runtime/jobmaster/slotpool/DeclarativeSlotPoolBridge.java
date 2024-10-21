@@ -161,6 +161,8 @@ public class DeclarativeSlotPoolBridge extends DeclarativeSlotPoolService implem
                             getRelativeTimeMillis());
 
         } else {
+            // tips 这里看DefaultDeclarativeSlotPool的实现：
+            //  提供slot给OutstandingRequirements，如果有能够匹配上的，则添加到集合中
             return getDeclarativeSlotPool()
                     .offerSlots(
                             offers,

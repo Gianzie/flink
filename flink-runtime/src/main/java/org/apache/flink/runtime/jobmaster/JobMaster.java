@@ -679,6 +679,8 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
                         taskManagerRegistration.getTaskExecutorGateway(), getFencingToken());
 
         return CompletableFuture.completedFuture(
+                // tips 这里看DeclarativeSlotPoolBridge实现：
+                //  提供slot，match OutstandingRequirements，如果能够匹配上，就提供slot
                 slotPoolService.offerSlots(
                         taskManagerRegistration.getTaskManagerLocation(),
                         rpcTaskManagerGateway,

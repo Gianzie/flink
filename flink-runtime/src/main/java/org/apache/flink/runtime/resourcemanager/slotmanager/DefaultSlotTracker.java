@@ -131,6 +131,7 @@ public class DefaultSlotTracker implements SlotTracker {
     public void notifyAllocationStart(SlotID slotId, JobID jobId) {
         Preconditions.checkNotNull(slotId);
         Preconditions.checkNotNull(jobId);
+        // tips slot switched from free to pending
         transitionSlotToPending(slots.get(slotId), jobId);
     }
 
@@ -138,6 +139,7 @@ public class DefaultSlotTracker implements SlotTracker {
     public void notifyAllocationComplete(SlotID slotId, JobID jobId) {
         Preconditions.checkNotNull(slotId);
         Preconditions.checkNotNull(jobId);
+        // tips enter
         transitionSlotToAllocated(slots.get(slotId), jobId);
     }
 
@@ -180,8 +182,11 @@ public class DefaultSlotTracker implements SlotTracker {
         Preconditions.checkNotNull(slot);
         Preconditions.checkState(slot.getState() == SlotState.FREE);
 
+        // tips 准备分配slot，state=PENDING
         slot.startAllocation(jobId);
+        // tips 将该slot从free列表中remove
         freeSlots.remove(slot.getSlotId());
+        // tips 通知slot状态修改
         slotStatusUpdateListeners.notifySlotStatusChange(
                 slot, SlotState.FREE, SlotState.PENDING, jobId);
     }
@@ -335,6 +340,7 @@ public class DefaultSlotTracker implements SlotTracker {
                     current,
                     jobId);
             listeners.forEach(
+                    // tips enter
                     listeners -> listeners.notifySlotStatusChange(slot, previous, current, jobId));
         }
     }

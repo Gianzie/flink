@@ -153,12 +153,15 @@ public class DeclarativeSlotManager implements SlotManager {
     }
 
     private SlotStatusUpdateListener createSlotStatusUpdateListener() {
+        // tips 第一次进来，previous=FREE，current=PENDING
         return (taskManagerSlot, previous, current, jobId) -> {
             if (previous == SlotState.PENDING) {
                 pendingSlotAllocations.remove(taskManagerSlot.getSlotId());
             }
 
             if (current == SlotState.PENDING) {
+                // tips 将slot变成pending状态
+                //  则维护requirementToFulfillingResources（满足资源的请求）resourceToFulfilledRequirement（满足请求的资源）并计数
                 resourceTracker.notifyAcquiredResource(jobId, taskManagerSlot.getResourceProfile());
             }
             if (current == SlotState.FREE) {
@@ -495,24 +498,29 @@ public class DeclarativeSlotManager implements SlotManager {
      * instead.
      */
     private void checkResourceRequirements() {
+        // tips 缺失的资源列表
         final Map<JobID, Collection<ResourceRequirement>> missingResources =
                 resourceTracker.getMissingResources();
+        // tips 当启动JobManager时，resourceTracker还是空的，所以代码会return掉？
         if (missingResources.isEmpty()) {
             taskExecutorManager.clearPendingTaskManagerSlots();
             return;
         }
 
+        // tips 没有match到slot的job
         final Map<JobID, ResourceCounter> unfulfilledRequirements = new LinkedHashMap<>();
         for (Map.Entry<JobID, Collection<ResourceRequirement>> resourceRequirements :
                 missingResources.entrySet()) {
             final JobID jobId = resourceRequirements.getKey();
 
             final ResourceCounter unfulfilledJobRequirements =
+                    // tips allocate free slot to job
                     tryAllocateSlotsForJob(jobId, resourceRequirements.getValue());
             if (!unfulfilledJobRequirements.isEmpty()) {
                 unfulfilledRequirements.put(jobId, unfulfilledJobRequirements);
             }
         }
+        // tips 如果 未满足需求 为空，return
         if (unfulfilledRequirements.isEmpty()) {
             return;
         }
@@ -528,7 +536,7 @@ public class DeclarativeSlotManager implements SlotManager {
         for (Map.Entry<JobID, ResourceCounter> unfulfilledRequirement :
                 unfulfilledRequirements.entrySet()) {
             freePendingSlots =
-                    // tips 尝试使用挂起的slot来分配资源
+                    // tips allocate pending slot to job
                     tryFulfillRequirementsWithPendingSlots(
                             unfulfilledRequirement.getKey(),
                             unfulfilledRequirement.getValue().getResourcesWithCount(),
@@ -542,10 +550,13 @@ public class DeclarativeSlotManager implements SlotManager {
 
     private ResourceCounter tryAllocateSlotsForJob(
             JobID jobId, Collection<ResourceRequirement> missingResources) {
+        // tips 未满足的需求
         ResourceCounter outstandingRequirements = ResourceCounter.empty();
 
         for (ResourceRequirement resourceRequirement : missingResources) {
+            // tips 缺少slot的数量
             int numMissingSlots =
+                    // tips 分配slot
                     internalTryAllocateSlots(
                             jobId, jobMasterTargetAddresses.get(jobId), resourceRequirement);
             if (numMissingSlots > 0) {
@@ -570,23 +581,33 @@ public class DeclarativeSlotManager implements SlotManager {
             JobID jobId, String targetAddress, ResourceRequirement resourceRequirement) {
         final ResourceProfile requiredResource = resourceRequirement.getResourceProfile();
         // Use LinkedHashMap to retain the original order
+        // tips 使用LinkedHashMap保持原始顺序
         final Map<SlotID, TaskManagerSlotInformation> availableSlots = new LinkedHashMap<>();
         for (TaskManagerSlotInformation freeSlot : slotTracker.getFreeSlots()) {
+            // tips 如果该slot没有被TM阻塞
             if (!isBlockedTaskManager(freeSlot.getTaskManagerConnection().getResourceID())) {
+                // tips 则该slot是可用的
                 availableSlots.put(freeSlot.getSlotId(), freeSlot);
             }
         }
 
+        // tips 未满足的slot数？
         int numUnfulfilled = 0;
+        // tips 资源请求的slot数
         for (int x = 0; x < resourceRequirement.getNumberOfRequiredSlots(); x++) {
 
+            // tips 预留的slot，用来分配
             final Optional<TaskManagerSlotInformation> reservedSlot =
+                    // tips 查看AnyMatchingSlotMatchingStrategy实现：拿申请的slot match可用的slot集合
                     slotMatchingStrategy.findMatchingSlot(
                             requiredResource,
+                            // tips 可用的slot集合
                             availableSlots.values(),
                             this::getNumberRegisteredSlotsOf);
             if (reservedSlot.isPresent()) {
+                // tips 如果有匹配上的slot，则进行分配
                 allocateSlot(reservedSlot.get(), jobId, targetAddress, requiredResource);
+                // tips 从可用集合中remove掉
                 availableSlots.remove(reservedSlot.get().getSlotId());
             } else {
                 // exit loop early; we won't find a matching slot for this requirement
@@ -632,16 +653,21 @@ public class DeclarativeSlotManager implements SlotManager {
 
         final TaskExecutorConnection taskExecutorConnection =
                 taskManagerSlot.getTaskManagerConnection();
+        // tips TE网关，用来调用请求slot的方法
         final TaskExecutorGateway gateway = taskExecutorConnection.getTaskExecutorGateway();
 
         final AllocationID allocationId = new AllocationID();
 
+        // tips slot switched from free to pending，并维护requirementToFulfillingResources&resourceToFulfilledRequirement，并计数
         slotTracker.notifyAllocationStart(slotId, jobId);
+        // tips 标记为已使用
         taskExecutorManager.markUsed(instanceId);
+        // tips pending状态的slot分配集合
         pendingSlotAllocations.put(slotId, allocationId);
 
         // RPC call to the task manager
         CompletableFuture<Acknowledge> requestFuture =
+                // tips TaskExecutor开始请求slot
                 gateway.requestSlot(
                         slotId,
                         jobId,
@@ -670,6 +696,7 @@ public class DeclarativeSlotManager implements SlotManager {
                                         "Completed allocation of slot {} for job {}.",
                                         slotId,
                                         jobId);
+                                // tips slot switched from pending to allocated
                                 slotTracker.notifyAllocationComplete(slotId, jobId);
                             } else {
                                 if (throwable instanceof SlotOccupiedException) {
