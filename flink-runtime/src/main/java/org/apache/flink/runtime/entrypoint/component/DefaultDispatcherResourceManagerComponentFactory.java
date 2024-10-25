@@ -230,7 +230,7 @@ public class DefaultDispatcherResourceManagerComponentFactory
                             dispatcherOperationCaches);
 
             log.debug("Starting Dispatcher.");
-            // tips 这里启动了Dispatcher（如果有需要恢复的作业，则这里会启动JobMaster，否则再env.execute()逻辑中启动JobMaster）
+            // tips 这里启动了Dispatcher并在最后执行用户代码（如果有需要恢复的作业，则这里会启动JobMaster，否则再env.execute()逻辑中启动JobMaster）
             dispatcherRunner =
                     dispatcherRunnerFactory.createDispatcherRunner(
                             highAvailabilityServices.getDispatcherLeaderElectionService(),

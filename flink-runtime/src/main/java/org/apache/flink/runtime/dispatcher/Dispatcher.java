@@ -342,6 +342,7 @@ public abstract class Dispatcher extends FencedRpcEndpoint<DispatcherId>
         startRecoveredJobs();
 
         this.dispatcherBootstrap =
+                // tips 这里才触发了用户代码的执行
                 this.dispatcherBootstrapFactory.create(
                         getSelfGateway(DispatcherGateway.class),
                         this.getRpcService().getScheduledExecutor(),

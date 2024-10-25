@@ -49,6 +49,7 @@ public class DefaultResourceTracker implements ResourceTracker {
                 "Received notification for job {} having new resource requirements {}.",
                 jobId,
                 resourceRequirements);
+        // tips JM给tracker赋值
         getOrCreateTracker(jobId).notifyResourceRequirements(resourceRequirements);
 
         if (resourceRequirements.isEmpty()) {
@@ -71,7 +72,7 @@ public class DefaultResourceTracker implements ResourceTracker {
                 "Received notification for job {} having acquired resource {}.",
                 jobId,
                 resourceProfile);
-        // tips enter
+        // tips TE给tracker赋值，notifyAcquiredResource则对 资源&请求 两个数据结构计数
         getOrCreateTracker(jobId).notifyAcquiredResource(resourceProfile);
     }
 

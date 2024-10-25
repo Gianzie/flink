@@ -282,7 +282,7 @@ public abstract class ResourceManager<WorkerType extends ResourceIDRetrievable>
 
             delegationTokenManager.start(this);
 
-            // tips 初始化（创建了YARN的RMClient申请资源，NMClient来启动TaskExecutor）
+            // tips 初始化，app模式下看ActiveResourceManager实现（创建了YARN的RMClient申请资源，NMClient来启动TaskExecutor）
             initialize();
         } catch (Exception e) {
             handleStartResourceManagerServicesException(e);
@@ -526,7 +526,7 @@ public abstract class ResourceManager<WorkerType extends ResourceIDRetrievable>
                         WorkerResourceSpec.fromTotalResourceProfile(
                                 workerTypeWorkerRegistration.getTotalResourceProfile(),
                                 slotReport.getNumSlotStatus());
-                // tips noop
+                // tips 看ActiveResourceManager的实现
                 onWorkerRegistered(workerTypeWorkerRegistration.getWorker(), workerResourceSpec);
             } else if (registrationResult == SlotManager.RegistrationResult.REJECTED) {
                 closeTaskManagerConnection(

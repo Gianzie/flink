@@ -110,7 +110,8 @@ public class SessionDispatcherLeaderProcess extends AbstractDispatcherLeaderProc
     private void createDispatcher(
             Collection<JobGraph> jobGraphs, Collection<JobResult> recoveredDirtyJobResults) {
 
-        // tips 这里和per-job模式一样都是通过dispatcherGatewayServiceFactory来创建和启动dispatcher，所以后面源码走势没错
+        // tips 这里和per-job模式一样都是通过dispatcherGatewayServiceFactory来创建和启动dispatcher
+        //  app模式下在启动dispatcher时执行用户代码
         final DispatcherGatewayService dispatcherService =
                 dispatcherGatewayServiceFactory.create(
                         DispatcherId.fromUuid(getLeaderSessionId()),

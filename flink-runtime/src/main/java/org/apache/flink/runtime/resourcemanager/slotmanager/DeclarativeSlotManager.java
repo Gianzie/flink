@@ -131,6 +131,7 @@ public class DeclarativeSlotManager implements SlotManager {
 
         taskExecutorManagerFactory =
                 (executor, resourceAllocator) ->
+                        // tips TaskExecutorManager
                         new TaskExecutorManager(
                                 slotManagerConfiguration.getDefaultWorkerResourceSpec(),
                                 slotManagerConfiguration.getNumSlotsPerWorker(),
@@ -153,6 +154,7 @@ public class DeclarativeSlotManager implements SlotManager {
     }
 
     private SlotStatusUpdateListener createSlotStatusUpdateListener() {
+        // tips 被notifySlotStatusChange方法调用
         // tips 第一次进来，previous=FREE，current=PENDING
         return (taskManagerSlot, previous, current, jobId) -> {
             if (previous == SlotState.PENDING) {
@@ -307,9 +309,10 @@ public class DeclarativeSlotManager implements SlotManager {
             jobMasterTargetAddresses.put(
                     resourceRequirements.getJobId(), resourceRequirements.getTargetAddress());
         }
+        // tips JobMaster启动时，这里给tracker赋值，后面用到
         resourceTracker.notifyResourceRequirements(
                 resourceRequirements.getJobId(), resourceRequirements.getResourceRequirements());
-        // tips 这里调用到了ActiveResourceManager来请求worker
+        // tips 调用到了ActiveResourceManager来请求worker（因为JM刚启动时是没有slot可用的）
         checkResourceRequirementsWithDelay();
     }
 
@@ -366,7 +369,7 @@ public class DeclarativeSlotManager implements SlotManager {
                         slotStatus.getJobID());
             }
 
-            // tips 检查资源需求（和JobMaster的逻辑一样，为什么都要执行这一段？）
+            // tips 检查资源需求（这里是真正的分配资源，因为JM启动时，是没有slot可用的）
             checkResourceRequirementsWithDelay();
             return RegistrationResult.SUCCESS;
         }
@@ -498,10 +501,10 @@ public class DeclarativeSlotManager implements SlotManager {
      * instead.
      */
     private void checkResourceRequirements() {
-        // tips 缺失的资源列表
+        // tips 缺失资源列表
         final Map<JobID, Collection<ResourceRequirement>> missingResources =
                 resourceTracker.getMissingResources();
-        // tips 当启动JobManager时，resourceTracker还是空的，所以代码会return掉？
+        // tips 当启动JobMaster到此处时，tracker已经有值
         if (missingResources.isEmpty()) {
             taskExecutorManager.clearPendingTaskManagerSlots();
             return;
@@ -514,7 +517,9 @@ public class DeclarativeSlotManager implements SlotManager {
             final JobID jobId = resourceRequirements.getKey();
 
             final ResourceCounter unfulfilledJobRequirements =
-                    // tips allocate free slot to job
+                    // tips allocate free slot to job（启动并注册job到JobLeaderService）
+                    //  JM启动时，无可用slot分配，所以会走下面的tryFulfillRequirementsWithPendingSlots
+                    //  TM启动时，slot够分配的话，unfulfilledRequirements就是空的，后面的代码会return掉
                     tryAllocateSlotsForJob(jobId, resourceRequirements.getValue());
             if (!unfulfilledJobRequirements.isEmpty()) {
                 unfulfilledRequirements.put(jobId, unfulfilledJobRequirements);
@@ -536,7 +541,7 @@ public class DeclarativeSlotManager implements SlotManager {
         for (Map.Entry<JobID, ResourceCounter> unfulfilledRequirement :
                 unfulfilledRequirements.entrySet()) {
             freePendingSlots =
-                    // tips allocate pending slot to job
+                    // tips match不到pending状态的slot，就去申请worker
                     tryFulfillRequirementsWithPendingSlots(
                             unfulfilledRequirement.getKey(),
                             unfulfilledRequirement.getValue().getResourcesWithCount(),
@@ -559,6 +564,7 @@ public class DeclarativeSlotManager implements SlotManager {
                     // tips 分配slot
                     internalTryAllocateSlots(
                             jobId, jobMasterTargetAddresses.get(jobId), resourceRequirement);
+            // tips TM未启动前，numMissingSlots一定大于0
             if (numMissingSlots > 0) {
                 outstandingRequirements =
                         outstandingRequirements.add(
@@ -583,6 +589,7 @@ public class DeclarativeSlotManager implements SlotManager {
         // Use LinkedHashMap to retain the original order
         // tips 使用LinkedHashMap保持原始顺序
         final Map<SlotID, TaskManagerSlotInformation> availableSlots = new LinkedHashMap<>();
+        // tips TM启动前，这里的freeSlot一定是空的
         for (TaskManagerSlotInformation freeSlot : slotTracker.getFreeSlots()) {
             // tips 如果该slot没有被TM阻塞
             if (!isBlockedTaskManager(freeSlot.getTaskManagerConnection().getResourceID())) {
@@ -591,7 +598,7 @@ public class DeclarativeSlotManager implements SlotManager {
             }
         }
 
-        // tips 未满足的slot数？
+        // tips 未满足的slot数
         int numUnfulfilled = 0;
         // tips 资源请求的slot数
         for (int x = 0; x < resourceRequirement.getNumberOfRequiredSlots(); x++) {
@@ -604,6 +611,7 @@ public class DeclarativeSlotManager implements SlotManager {
                             // tips 可用的slot集合
                             availableSlots.values(),
                             this::getNumberRegisteredSlotsOf);
+            // tips 当TM启动了，这里就可以开始分配
             if (reservedSlot.isPresent()) {
                 // tips 如果有匹配上的slot，则进行分配
                 allocateSlot(reservedSlot.get(), jobId, targetAddress, requiredResource);
@@ -611,6 +619,7 @@ public class DeclarativeSlotManager implements SlotManager {
                 availableSlots.remove(reservedSlot.get().getSlotId());
             } else {
                 // exit loop early; we won't find a matching slot for this requirement
+                // tips 当JM刚启动时是没有slot可用的，所以直接拿 需要的slot数-0 就是 未满的slot数，直接break
                 int numRemaining = resourceRequirement.getNumberOfRequiredSlots() - x;
                 numUnfulfilled += numRemaining;
                 break;
@@ -667,7 +676,7 @@ public class DeclarativeSlotManager implements SlotManager {
 
         // RPC call to the task manager
         CompletableFuture<Acknowledge> requestFuture =
-                // tips TaskExecutor开始请求slot
+                // tips RM开始向TE请求slot，TE注册job到JobLeaderService
                 gateway.requestSlot(
                         slotId,
                         jobId,
@@ -739,10 +748,13 @@ public class DeclarativeSlotManager implements SlotManager {
             ResourceCounter pendingSlots) {
         for (Map.Entry<ResourceProfile, Integer> missingResource : missingResources) {
             ResourceProfile profile = missingResource.getKey();
+            // tips 缺少的slot数量
             for (int i = 0; i < missingResource.getValue(); i++) {
                 final MatchingResult matchingResult =
+                        // tips 尝试match pending状态的slot
                         tryFulfillWithPendingSlots(profile, pendingSlots);
                 pendingSlots = matchingResult.getNewAvailableResources();
+                // tips 当只有JM启动时，不应该match到，所以就去启动worker
                 if (!matchingResult.isSuccessfulMatching()) {
                     final WorkerAllocationResult allocationResult =
                             // tips 尝试分配worker并预留slot
@@ -789,6 +801,7 @@ public class DeclarativeSlotManager implements SlotManager {
         Optional<ResourceRequirement> newlyFulfillableRequirements =
                 // tips enter
                 taskExecutorManager.allocateWorker(profile);
+        // tips 如果申请到了资源，预留1个slot pending（如果worker的slot大于1的话）
         if (newlyFulfillableRequirements.isPresent()) {
             ResourceRequirement newSlots = newlyFulfillableRequirements.get();
             // reserve one of the new slots

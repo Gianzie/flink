@@ -325,7 +325,7 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
                         getMainThreadExecutor(),
                         log);
 
-        // tips SlotPoolService初始化
+        // tips SlotPoolService初始化（看DeclarativeSlotPoolBridgeServiceFactory实现）
         this.slotPoolService =
                 checkNotNull(slotPoolServiceSchedulerFactory)
                         .createSlotPoolService(
@@ -968,6 +968,7 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
                 jobGraph.getJobID(),
                 getFencingToken());
 
+        // tips 开始调度
         startScheduling();
     }
 
@@ -985,7 +986,7 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
             //   - activate leader retrieval for the resource manager
             //   - on notification of the leader, the connection will be established and
             //     the slot pool will start requesting slots
-            // tips 作业准备就绪，尝试与RM建立连接
+            // tips 作业准备就绪，尝试与RM建立连接，并且由SlotPool申请slot
             resourceManagerLeaderRetriever.start(new ResourceManagerLeaderListener());
         } catch (Exception e) {
             handleStartJobMasterServicesError(e);
@@ -1202,7 +1203,7 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
                             resourceManagerGateway, resourceManagerResourceId);
 
             blocklistHandler.registerBlocklistListener(resourceManagerGateway);
-            // tips 槽池和RM建立连接
+            // tips SlotPoolService连接到RM（这时候TM还未启动，没有slot可用，所以申请了worker）
             slotPoolService.connectToResourceManager(resourceManagerGateway);
             partitionTracker.connectToResourceManager(resourceManagerGateway);
 
@@ -1399,7 +1400,7 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
                         // filter out outdated connections
                         //noinspection ObjectEquality
                         if (this == resourceManagerConnection) {
-                            // tips 和RM建立连接
+                            // tips JM和RM建立连接
                             establishResourceManagerConnection(success);
                         }
                     });

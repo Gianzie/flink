@@ -241,6 +241,7 @@ public class ActiveResourceManager<WorkerType extends ResourceIDRetrievable>
     @Override
     protected void onWorkerRegistered(WorkerType worker, WorkerResourceSpec workerResourceSpec) {
         final ResourceID resourceId = worker.getResourceID();
+        // tips JobManager Logs中打印了该行
         log.info("Worker {} is registered.", resourceId.getStringWithMetadata());
 
         tryRemovePreviousPendingRecoveryTaskManager(resourceId);
@@ -256,6 +257,7 @@ public class ActiveResourceManager<WorkerType extends ResourceIDRetrievable>
 
         if (currentAttemptUnregisteredWorkers.remove(resourceId)) {
             final int count = pendingWorkerCounter.decreaseAndGet(workerResourceSpec);
+            // tips JobManager Logs中打印了该行
             log.info(
                     "Worker {} with resource spec {} was requested in current attempt."
                             + " Current pending count after registering: {}.",

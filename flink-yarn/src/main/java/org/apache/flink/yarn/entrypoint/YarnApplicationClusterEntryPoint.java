@@ -109,6 +109,7 @@ public final class YarnApplicationClusterEntryPoint extends ApplicationClusterEn
             System.exit(1);
         }
 
+        // tips 这里声明了app模式下的RM实现：YarnResourceManagerFactory extends ActiveResourceManagerFactory
         YarnApplicationClusterEntryPoint yarnApplicationClusterEntrypoint =
                 new YarnApplicationClusterEntryPoint(configuration, program);
 

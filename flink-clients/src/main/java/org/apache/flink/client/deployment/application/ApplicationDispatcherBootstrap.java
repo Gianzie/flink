@@ -302,7 +302,7 @@ public class ApplicationDispatcherBootstrap implements DispatcherBootstrap {
                     new EmbeddedExecutorServiceLoader(
                             applicationJobIds, dispatcherGateway, scheduledExecutor);
 
-            // tips enter
+            // tips enter（这里执行用户代码）
             ClientUtils.executeProgram(
                     executorServiceLoader,
                     configuration,

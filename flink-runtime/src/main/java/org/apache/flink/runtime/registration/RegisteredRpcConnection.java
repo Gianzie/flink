@@ -102,7 +102,7 @@ public abstract class RegisteredRpcConnection<
                 !isConnected() && pendingRegistration == null,
                 "The RPC connection is already started");
 
-        // tips 创建新的注册对象
+        // tips 创建注册对象，触发注册结果之后的逻辑（JM注册到RM、TM注册到RM、TM将job注册到JM）
         final RetryingRegistration<F, G, S, R> newRegistration = createNewRegistration();
 
         if (REGISTRATION_UPDATER.compareAndSet(this, null, newRegistration)) {
@@ -241,7 +241,7 @@ public abstract class RegisteredRpcConnection<
     // ------------------------------------------------------------------------
 
     private RetryingRegistration<F, G, S, R> createNewRegistration() {
-        // tips generateRegistration()，有不同的实现来注册，如JM和TM注册到RM
+        // tips generateRegistration()，有不同的实现来注册（按顺序 JM注册到RM、TM注册到RM、TM将job注册到JM）
         RetryingRegistration<F, G, S, R> newRegistration = checkNotNull(generateRegistration());
 
         CompletableFuture<RetryingRegistration.RetryingRegistrationResult<G, S, R>> future =
@@ -267,7 +267,7 @@ public abstract class RegisteredRpcConnection<
                     } else {
                         if (result.isSuccess()) {
                             targetGateway = result.getGateway();
-                            // tips 注册成功的逻辑
+                            // tips 注册成功的逻辑（按顺序 JM注册到RM、TM注册到RM、TM将job注册到JM）
                             onRegistrationSuccess(result.getSuccess());
                         } else if (result.isRejection()) {
                             onRegistrationRejection(result.getRejection());

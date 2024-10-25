@@ -113,6 +113,7 @@ public class ResourceManagerServiceImpl implements ResourceManagerService, Leade
                 LOG.debug("Resource manager service has already started.");
                 return;
             }
+            // tips 这里将RM的状态改为true
             running = true;
         }
 
@@ -190,7 +191,7 @@ public class ResourceManagerServiceImpl implements ResourceManagerService, Leade
         handleLeaderEventExecutor.execute(
                 () -> {
                     synchronized (lock) {
-                        // tips 第一次启动RM时，running is false，这里为什么没有执行if逻辑？
+                        // tips 启动前将running改为true
                         if (!running) {
                             LOG.info(
                                     "Resource manager service is not running. Ignore granting leadership with session ID {}.",
@@ -256,7 +257,7 @@ public class ResourceManagerServiceImpl implements ResourceManagerService, Leade
 
         this.leaderSessionID = newLeaderSessionID;
         this.leaderResourceManager =
-                // tips 创建RM
+                // tips 创建RM和SlotManager
                 resourceManagerFactory.createResourceManager(rmProcessContext, newLeaderSessionID);
 
         final ResourceManager<?> newLeaderResourceManager = this.leaderResourceManager;

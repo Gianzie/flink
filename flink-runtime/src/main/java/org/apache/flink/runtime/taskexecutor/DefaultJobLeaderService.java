@@ -124,6 +124,7 @@ public class DefaultJobLeaderService implements JobLeaderService {
         if (DefaultJobLeaderService.State.CREATED != state) {
             throw new IllegalStateException("The service has already been started.");
         } else {
+            // tips TaskManager Logs中打印了该行
             LOG.info("Start job leader service.");
 
             this.ownerAddress = Preconditions.checkNotNull(initialOwnerAddress);
@@ -189,6 +190,7 @@ public class DefaultJobLeaderService implements JobLeaderService {
                 DefaultJobLeaderService.State.STARTED == state,
                 "The service is currently not running.");
 
+        // tips TaskManager Logs中打印了该行
         LOG.info("Add job {} for job leader monitoring.", jobId);
 
         final LeaderRetrievalService leaderRetrievalService =
@@ -206,6 +208,7 @@ public class DefaultJobLeaderService implements JobLeaderService {
             oldEntry.f1.stop();
         }
 
+        // tips leader检索服务启动
         leaderRetrievalService.start(jobManagerLeaderListener);
     }
 
@@ -318,12 +321,14 @@ public class DefaultJobLeaderService implements JobLeaderService {
                         closeRpcConnection();
                     } else {
                         // check whether we are already connecting to this leader
+                        // tips 检查传递的leaderId和当前的leaderId是否一致（应该不一致，因为第一次连接）
                         if (Objects.equals(jobMasterId, currentJobMasterId)) {
                             LOG.debug(
                                     "Ongoing attempt to connect to leader of job {}. Ignoring duplicate leader information.",
                                     jobId);
                         } else {
                             closeRpcConnection();
+                            // tips enter
                             openRpcConnectionTo(leaderAddress, jobMasterId);
                         }
                     }
@@ -347,10 +352,12 @@ public class DefaultJobLeaderService implements JobLeaderService {
                     new JobManagerRegisteredRpcConnection(
                             LOG, leaderAddress, jobMasterId, rpcService.getScheduledExecutor());
 
+            // tips TaskManager Logs中打印了该行
             LOG.info(
                     "Try to register at job manager {} with leader id {}.",
                     leaderAddress,
                     jobMasterId.toUUID());
+            // tips enter
             rpcConnection.start();
         }
 
@@ -414,11 +421,13 @@ public class DefaultJobLeaderService implements JobLeaderService {
             protected void onRegistrationSuccess(JMTMRegistrationSuccess success) {
                 runIfValidRegistrationAttemptOrElse(
                         () -> {
+                            // tips TaskManager Logs中打印了该行
                             log.info(
                                     "Successful registration at job manager {} for job {}.",
                                     getTargetAddress(),
                                     jobId);
 
+                            // tips enter
                             jobLeaderListener.jobManagerGainedLeadership(
                                     jobId, getTargetGateway(), success);
                         },

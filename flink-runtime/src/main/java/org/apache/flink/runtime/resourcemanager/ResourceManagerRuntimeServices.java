@@ -61,6 +61,7 @@ public class ResourceManagerRuntimeServices {
             ScheduledExecutor scheduledExecutor,
             SlotManagerMetricGroup slotManagerMetricGroup) {
 
+        // tips create SlotManager
         final SlotManager slotManager =
                 createSlotManager(configuration, scheduledExecutor, slotManagerMetricGroup);
 

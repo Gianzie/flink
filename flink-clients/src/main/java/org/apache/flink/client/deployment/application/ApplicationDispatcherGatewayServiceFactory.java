@@ -102,7 +102,7 @@ public class ApplicationDispatcherGatewayServiceFactory
                             recoveredJobs,
                             recoveredDirtyJobResults,
                             (dispatcherGateway, scheduledExecutor, errorHandler) ->
-                                    // tips 这里是非常重要的逻辑，找到用户代码的入口类
+                                    // tips 这里是非常重要的逻辑，执行用户代码，在dispatcher启动逻辑的最后执行，这里只是引用
                                     new ApplicationDispatcherBootstrap(
                                             application,
                                             recoveredJobIds,
@@ -116,7 +116,7 @@ public class ApplicationDispatcherGatewayServiceFactory
             throw new FlinkRuntimeException("Could not create the Dispatcher rpc endpoint.", e);
         }
 
-        // tips dispatcher启动
+        // tips dispatcher启动（触发用户代码的执行）
         dispatcher.start();
 
         return DefaultDispatcherGatewayService.from(dispatcher);

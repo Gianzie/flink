@@ -440,7 +440,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
     private void startTaskExecutorServices() throws Exception {
         try {
             // start by connecting to the ResourceManager
-            // tips 先连接到ResourceManager
+            // tips TE连接到ResourceManager
             resourceManagerLeaderRetriever.start(new ResourceManagerLeaderListener());
 
             // tell the task slot table who's responsible for the task slot actions
@@ -448,6 +448,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
             taskSlotTable.start(new SlotActionsImpl(), getMainThreadExecutor());
 
             // start the job leader service
+            // tips 启动JobLeaderService
             jobLeaderService.start(
                     getAddress(), getRpcService(), haServices, new JobLeaderListenerImpl());
 
@@ -1140,7 +1141,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
 
         try {
             final boolean isConnected =
-                    // tips 为job分配slot，并打印相关日志
+                    // tips 为job分配slot，启动JobLeaderService
                     allocateSlotForJob(jobId, slotId, allocationId, resourceProfile, targetAddress);
 
             if (isConnected) {
@@ -1162,7 +1163,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
             ResourceProfile resourceProfile,
             String targetAddress)
             throws SlotAllocationException {
-        // tips 分配slot，打印相关日志
+        // tips 分配slot
         allocateSlot(slotId, jobId, allocationId, resourceProfile);
 
         final JobTable.Job job;
@@ -1170,7 +1171,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
         try {
             job =
                     jobTable.getOrCreateJob(
-                            // tips 注册job到leader服务中
+                            // tips TM注册job到leader服务中（这里会层层调用启动JobLeaderService）
                             jobId, () -> registerNewJobAndCreateServices(jobId, targetAddress));
         } catch (Exception e) {
             // free the allocated slot
@@ -1198,6 +1199,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
 
     private TaskExecutorJobServices registerNewJobAndCreateServices(
             JobID jobId, String targetAddress) throws Exception {
+        // tips JobLeaderService添加作业
         jobLeaderService.addJob(jobId, targetAddress);
         final JobPermanentBlobService permanentBlobService =
                 taskExecutorBlobService.getPermanentBlobService();
@@ -1394,7 +1396,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
         // tips RM地址
         resourceManagerAddress =
                 createResourceManagerAddress(newLeaderAddress, newResourceManagerId);
-        // tips 连接至RM
+        // tips TE连接至RM
         reconnectToResourceManager(
                 new FlinkException(
                         String.format(
@@ -1416,8 +1418,9 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
     private void reconnectToResourceManager(Exception cause) {
         // tips 关闭RM连接（如果有的话）
         closeResourceManagerConnection(cause);
+        // tips 开启注册超时
         startRegistrationTimeout();
-        // tips 尝试连接到RM
+        // tips TE连接到RM
         tryConnectToResourceManager();
     }
 
@@ -1460,7 +1463,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
                         getMainThreadExecutor(),
                         new ResourceManagerRegistrationListener(),
                         taskExecutorRegistration);
-        // tips start（和JobMaster的后续逻辑一样）
+        // tips start（TE和RM进行连接，这边一连接之后，JM那边ActiveResourceManager就打印了正在注册TM的log）
         resourceManagerConnection.start();
     }
 
@@ -1471,7 +1474,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
             ClusterInformation clusterInformation) {
 
         final CompletableFuture<Acknowledge> slotReportResponseFuture =
-                // tips 确定所有slot的状态free、pending、allocated，SlotManager注册TaskManager
+                // tips SlotManager注册TaskManager，确定所有slot的状态free、pending、allocated
                 resourceManagerGateway.sendSlotReport(
                         getResourceID(),
                         taskExecutorRegistrationId,
@@ -1756,10 +1759,12 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
             }
         }
 
+        // tips TaskManager Logs中打印了该行
         log.info("Establish JobManager connection for job {}.", jobId);
 
         ResourceID jobManagerResourceID = registrationSuccess.getResourceID();
 
+        // tips 与JM建立连接的对象
         final JobTable.Connection establishedConnection =
                 associateWithJobManager(job, jobManagerResourceID, jobMasterGateway);
 
@@ -1767,6 +1772,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
         jobManagerHeartbeatManager.monitorTarget(
                 jobManagerResourceID, new JobManagerHeartbeatReceiver(jobMasterGateway));
 
+        // tips 提供slot给JM
         internalOfferSlotsToJobManager(establishedConnection);
     }
 
@@ -2363,7 +2369,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
         public void notifyLeaderAddress(final String leaderAddress, final UUID leaderSessionID) {
             runAsync(
                     () ->
-                            // tips 通知ResourceManageLeader
+                            // tips TE通知ResourceManageLeader
                             notifyOfNewResourceManagerLeader(
                                     leaderAddress,
                                     ResourceManagerId.fromUuidOrNull(leaderSessionID)));
@@ -2387,6 +2393,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
                             jobTable.getJob(jobId)
                                     .ifPresent(
                                             job ->
+                                                    // tips job和JM建立连接
                                                     establishJobManagerConnection(
                                                             job,
                                                             jobManagerGateway,
