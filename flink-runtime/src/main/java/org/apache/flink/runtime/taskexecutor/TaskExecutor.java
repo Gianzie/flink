@@ -1140,10 +1140,12 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
                         slotId, jobId, targetAddress, allocationId, resourceProfile));
 
         try {
+            // tips 这时候job还未连接到JM，isConnected is false
             final boolean isConnected =
                     // tips 为job分配slot，启动JobLeaderService
                     allocateSlotForJob(jobId, slotId, allocationId, resourceProfile, targetAddress);
 
+            // tips 正常首次提交不会在这里分配slot
             if (isConnected) {
                 // tips TaskExecutor提供slot给JobManager
                 offerSlotsToJobManager(jobId);
@@ -1194,6 +1196,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
             throw new SlotAllocationException("Could not create new job.", e);
         }
 
+        // tips 这里创建出的job的connection is null，在TE将job注册到JM时才创建了connection，所以这里返回的是false
         return job.isConnected();
     }
 
