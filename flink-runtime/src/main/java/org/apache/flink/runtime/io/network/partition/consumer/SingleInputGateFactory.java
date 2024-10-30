@@ -166,6 +166,7 @@ public class SingleInputGateFactory {
                         maybeCreateBufferDebloater(
                                 owningTaskName, gateIndex, networkInputGroup.addGroup(gateIndex)));
 
+        // tips 创建InputGate和它所有的Channel
         createInputChannels(
                 owningTaskName, igdd, inputGate, subpartitionIndexRange, gateBuffersSpec, metrics);
         return inputGate;
@@ -215,6 +216,7 @@ public class SingleInputGateFactory {
             for (int subpartitionIndex = subpartitionIndexRange.getStartIndex();
                     subpartitionIndex <= subpartitionIndexRange.getEndIndex();
                     ++subpartitionIndex) {
+                // tips 创建InputChannel，每个子分区对应1个channel
                 inputChannels[channelIdx] =
                         createInputChannel(
                                 inputGate,
@@ -228,6 +230,7 @@ public class SingleInputGateFactory {
             }
         }
 
+        // tips 将InputChannel存到InputGate中
         inputGate.setInputChannels(inputChannels);
 
         LOG.debug(

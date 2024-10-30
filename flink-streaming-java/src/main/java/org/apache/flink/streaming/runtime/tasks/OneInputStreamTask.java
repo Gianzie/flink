@@ -98,10 +98,15 @@ public class OneInputStreamTask<IN, OUT> extends StreamTask<OUT, OneInputStreamO
         StreamConfig configuration = getConfiguration();
         int numberOfInputs = configuration.getNumberOfNetworkInputs();
 
+        // tips map算子的input最少也为1（可以看StreamingJobGraphGenerator的connect方法）
         if (numberOfInputs > 0) {
+            // tips 处理InputGate中的ck分界线
             CheckpointedInputGate inputGate = createCheckpointedInputGate();
+            // tips 从记录的metrics中取到已经消费的record数
             Counter numRecordsIn = setupNumRecordsInCounter(mainOperator);
+            // tips 通过numRecordsIn创建DataOutput对象，后续数据可以正确emit
             DataOutput<IN> output = createDataOutput(numRecordsIn);
+            // tips 流算子输入接口
             StreamTaskInput<IN> input = createTaskInput(inputGate);
 
             StreamConfig.InputConfig[] inputConfigs =
@@ -117,8 +122,10 @@ public class OneInputStreamTask<IN, OUT> extends StreamTask<OUT, OneInputStreamO
             getEnvironment()
                     .getMetricGroup()
                     .getIOMetricGroup()
+                    // tips TaskIO指标组 记录 需要从哪条数据开始接着消费
                     .reuseRecordsInputCounter(numRecordsIn);
 
+            // tips OneInputStreamTask的InputReader（输入读取器）
             inputProcessor = new StreamOneInputProcessor<>(input, output, operatorChain);
         }
         mainOperator

@@ -226,6 +226,7 @@ public class NettyShuffleEnvironment
                     partitionIndex < resultPartitions.length;
                     partitionIndex++) {
                 resultPartitions[partitionIndex] =
+                        // tips create ResultPartition
                         resultPartitionFactory.create(
                                 ownerContext.getOwnerName(),
                                 partitionIndex,
@@ -260,6 +261,7 @@ public class NettyShuffleEnvironment
                 final InputGateDeploymentDescriptor igdd =
                         inputGateDeploymentDescriptors.get(gateIndex);
                 SingleInputGate inputGate =
+                        // tips enter
                         singleInputGateFactory.create(
                                 ownerContext,
                                 gateIndex,

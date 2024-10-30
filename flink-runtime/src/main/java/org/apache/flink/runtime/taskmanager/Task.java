@@ -398,9 +398,10 @@ public class Task
                         taskNameWithSubtaskAndId, executionId, metrics.getIOMetricGroup());
 
         // produced intermediate result partitions
-        // tips PhysicalGraph中ResultPartition的生产者
+        // tips PhysicalGraph中task生成的ResultPartition
         final ResultPartitionWriter[] resultPartitionWriters =
                 shuffleEnvironment
+                        // tips 创建了ResultPartition
                         .createResultPartitionWriters(
                                 taskShuffleContext, resultPartitionDeploymentDescriptors)
                         .toArray(new ResultPartitionWriter[] {});
@@ -408,9 +409,10 @@ public class Task
         this.partitionWriters = resultPartitionWriters;
 
         // consumed intermediate result partitions
-        // tips PhysicalGraph中ResultPartition的消费者
+        // tips PhysicalGraph中ResultPartition的消费者：InputGate
         final IndexedInputGate[] gates =
                 shuffleEnvironment
+                        // tips 这里创建了InputGate及其所有channel
                         .createInputGates(taskShuffleContext, this, inputGateDeploymentDescriptors)
                         .toArray(new IndexedInputGate[0]);
 
@@ -941,15 +943,16 @@ public class Task
             //  [FLINK-13384][runtime] Fix back pressure sampling for SourceStreamTask
             executingThread.setContextClassLoader(userCodeClassLoader.asClassLoader());
 
-            // tips 恢复作业的逻辑（后面再细看）
+            // tips restore逻辑
             runWithSystemExitMonitoring(finalInvokable::restore);
 
-            // tips 将task的状态从DEPLOYING过渡到RUNNING
+            // tips 将task状态从DEPLOYING过渡到RUNNING
             if (!transitionState(ExecutionState.INITIALIZING, ExecutionState.RUNNING)) {
                 throw new CancelTaskException();
             }
 
             // notify everyone that we switched to running
+            // tips ExecutionGraph switched from INITIALIZING to RUNNING（和task保持一致）
             taskManagerActions.updateTaskExecutionState(
                     new TaskExecutionState(executionId, ExecutionState.RUNNING));
 
@@ -1110,6 +1113,7 @@ public class Task
                 // tips
                 //  第一次进来，task switched from CREATED to DEPLOYING
                 //  第二次进来，task switched from DEPLOYING to INITIALIZING
+                //  第三次进来，task switched from INITIALIZING to RUNNING
                 LOG.info(
                         "{} ({}) switched from {} to {}.",
                         taskNameWithSubtask,

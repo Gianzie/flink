@@ -309,6 +309,7 @@ public class SingleInputGate extends IndexedInputGate {
                 }
 
                 convertRecoveredInputChannels();
+                // tips enter
                 internalRequestPartitions();
             }
 
@@ -339,6 +340,7 @@ public class SingleInputGate extends IndexedInputGate {
     private void internalRequestPartitions() {
         for (InputChannel inputChannel : inputChannels.values()) {
             try {
+                // tips 这里看LocalInputChannel实现
                 inputChannel.requestSubpartition();
             } catch (Throwable t) {
                 inputChannel.setError(t);

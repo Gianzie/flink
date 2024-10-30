@@ -684,18 +684,23 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
         closedOperators = false;
         LOG.debug("Initializing {}.", getName());
 
+        // tips 该task执行的算子链（RegularOperatorChain）
         operatorChain =
                 getEnvironment().getTaskStateManager().isTaskDeployedAsFinished()
                         ? new FinishedOperatorChain<>(this, recordWriter)
                         : new RegularOperatorChain<>(this, recordWriter);
+        // tips 消费该task's inputStream的算子
         mainOperator = operatorChain.getMainOperator();
 
         getEnvironment()
                 .getTaskStateManager()
                 .getRestoreCheckpointId()
+                // tips 将最新的checkpointID存储到latestReportCheckpointId
                 .ifPresent(restoreId -> latestReportCheckpointId = restoreId);
 
         // task specific initialization
+        // tips 根据task的不同，查看不同的逻辑，这里以map为例，看OneInputStreamTask
+        //  从记录的metrics中取到已消费的record记录，并用来创建DataOutput对象，以便后续数据可以正确emit
         init();
 
         // save the work of reloading state, etc, if the task is already canceled
@@ -706,9 +711,11 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
 
         // we need to make sure that any triggers scheduled in open() cannot be
         // executed before all operators are opened
+        // tips 读取ResultPartition和InputGate，发送“InputGate请求ResultPartition”的邮件
         CompletableFuture<Void> allGatesRecoveredFuture = actionExecutor.call(this::restoreGates);
 
         // Run mailbox until all gates will be recovered.
+        // tips 等所有InputGate恢复后开始处理邮件
         mailboxProcessor.runMailboxLoop();
 
         ensureNotCanceled();
@@ -726,8 +733,10 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
     }
 
     private CompletableFuture<Void> restoreGates() throws Exception {
+        // tips 读取ck/sp期间保存的通道状态
         SequentialChannelStateReader reader =
                 getEnvironment().getTaskStateManager().getSequentialChannelStateReader();
+        // tips 读取ResultPartition
         reader.readOutputData(
                 getEnvironment().getAllWriters(), !configuration.isGraphContainingLoops());
 
@@ -737,6 +746,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
         channelIOExecutor.execute(
                 () -> {
                     try {
+                        // tips 读取InputGate
                         reader.readInputData(inputGates);
                     } catch (Exception e) {
                         asyncExceptionHandler.handleAsyncException(
@@ -755,12 +765,14 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
                     .getStateConsumedFuture()
                     .thenRun(
                             () ->
+                                    // tips 发送“InputGate请求ResultPartition”的邮件
                                     mainMailboxExecutor.execute(
                                             inputGate::requestPartitions,
                                             "Input gate request partitions"));
         }
 
         return CompletableFuture.allOf(recoveredFutures.toArray(new CompletableFuture[0]))
+                // tips 挂起由 runMailboxLoop启动的循环运行
                 .thenRun(mailboxProcessor::suspend);
     }
 

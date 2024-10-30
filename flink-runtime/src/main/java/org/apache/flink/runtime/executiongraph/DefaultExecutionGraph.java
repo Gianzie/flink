@@ -1413,6 +1413,7 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
                 return attempt.switchToRecovering();
 
             case RUNNING:
+                // tips task此时状态为RUNNING，去更改ExecutionGraph的状态
                 return attempt.switchToRunning();
 
             case FINISHED:

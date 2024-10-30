@@ -1443,18 +1443,16 @@ public class Execution
         }
 
         // tips
-        //  第一次调用时，state=都是CREATED，currentState=CREATED，targetState=SCHEDULED
-        //  第二次调用时，state=都是SCHEDULED，currentState=SCHEDULED，targetState=DEPLOYING
         //  第一次调用时，state=CREATED，     currentState=CREATED，     targetState=SCHEDULED
         //  第二次调用时，state=SCHEDULED，   currentState=SCHEDULED，   targetState=DEPLOYING
         //  第三次调用时，state=DEPLOYING，   currentState=DEPLOYING，   targetState=INITIALIZING（由task反射执行时调用）
+        //  第四次调用时，state=INITIALIZING，currentState=INITIALIZING，targetState=RUNNING（由task反射执行时调用）
         if (state == currentState) {
             // tips
-            //  第一次调用时，这里 switched from CREATED to SCHEDULED.
-            //  第二次调用时，这里 switched from SCHEDULED to DEPLOYING.
             //  第一次调用时，这里 switched from CREATED      to SCHEDULED.
             //  第二次调用时，这里 switched from SCHEDULED    to DEPLOYING.
             //  第三次调用时，这里 switched from DEPLOYING    to INITIALIZING.（由task反射执行时调用）
+            //  第四次调用时，这里 switched from INITIALIZING to RUNNING.（由task反射执行时调用）
             state = targetState;
             markTimestamp(currentState, targetState);
 
