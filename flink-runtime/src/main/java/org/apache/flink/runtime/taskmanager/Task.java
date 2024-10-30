@@ -398,6 +398,7 @@ public class Task
                         taskNameWithSubtaskAndId, executionId, metrics.getIOMetricGroup());
 
         // produced intermediate result partitions
+        // tips PhysicalGraph中ResultPartition的生产者
         final ResultPartitionWriter[] resultPartitionWriters =
                 shuffleEnvironment
                         .createResultPartitionWriters(
@@ -407,6 +408,7 @@ public class Task
         this.partitionWriters = resultPartitionWriters;
 
         // consumed intermediate result partitions
+        // tips PhysicalGraph中ResultPartition的消费者
         final IndexedInputGate[] gates =
                 shuffleEnvironment
                         .createInputGates(taskShuffleContext, this, inputGateDeploymentDescriptors)
@@ -430,6 +432,7 @@ public class Task
         invokableHasBeenCanceled = new AtomicBoolean(false);
 
         // finally, create the executing thread, but do not start it
+        // tips 创建线程时指定JVM调用自身的run()
         executingThread = new Thread(TASK_THREADS_GROUP, this, taskNameWithSubtask);
     }
 
@@ -552,6 +555,7 @@ public class Task
 
     /** Starts the task's thread. */
     public void startTaskThread() {
+        // tips 初始化thread时声明JVM调用自身run()
         executingThread.start();
     }
 
@@ -559,6 +563,7 @@ public class Task
     @Override
     public void run() {
         try {
+            // tips task的核心方法
             doRun();
         } finally {
             terminationFuture.complete(executionState);
@@ -570,8 +575,10 @@ public class Task
         //  Initial State transition
         // ----------------------------
         while (true) {
+            // tips task的ExecutionState初始化时是CREATED
             ExecutionState current = this.executionState;
             if (current == ExecutionState.CREATED) {
+                // tips 将task的状态从CREATED过渡到DEPLOYING
                 if (transitionState(ExecutionState.CREATED, ExecutionState.DEPLOYING)) {
                     // success, we can start our work
                     break;
@@ -621,23 +628,28 @@ public class Task
             // this may involve downloading the job's JAR files and/or classes
             LOG.info("Loading JAR files for task {}.", this);
 
+            // tips 用户类加载器
             userCodeClassLoader = createUserCodeClassloader();
+            // tips 程序执行配置
             final ExecutionConfig executionConfig =
                     serializedExecutionConfig.deserializeValue(userCodeClassLoader.asClassLoader());
             Configuration executionConfigConfiguration = executionConfig.toConfiguration();
 
             // override task cancellation interval from Flink config if set in ExecutionConfig
+            // tips task取消间隔，ExecutionConfig覆盖flink-config.yaml
             taskCancellationInterval =
                     executionConfigConfiguration
                             .getOptional(TaskManagerOptions.TASK_CANCELLATION_INTERVAL)
                             .orElse(taskCancellationInterval);
 
             // override task cancellation timeout from Flink config if set in ExecutionConfig
+            // tips task取消时的超时时间
             taskCancellationTimeout =
                     executionConfigConfiguration
                             .getOptional(TaskManagerOptions.TASK_CANCELLATION_TIMEOUT)
                             .orElse(taskCancellationTimeout);
 
+            // tips 第一次检查task是否canceling/canceled/failed
             if (isCanceledOrFailed()) {
                 throw new CancelTaskException();
             }
@@ -651,9 +663,11 @@ public class Task
 
             LOG.debug("Registering task at network: {}.", this);
 
+            // tips 设置ResultPartition和InputGate
             setupPartitionsAndGates(partitionWriters, inputGates);
 
             for (ResultPartitionWriter partitionWriter : partitionWriters) {
+                // tips 注册ResultPartition
                 taskEventDispatcher.registerPartition(partitionWriter.getPartitionId());
             }
 
@@ -675,6 +689,7 @@ public class Task
                         e);
             }
 
+            // tips 第二次检查task是否canceling/canceled/failed
             if (isCanceledOrFailed()) {
                 throw new CancelTaskException();
             }
@@ -683,6 +698,7 @@ public class Task
             //  call the user code initialization methods
             // ----------------------------------------------------------------
 
+            // tips 将job和vertex（task）绑定在一起
             TaskKvStateRegistry kvStateRegistry =
                     kvStateService.createKvStateTaskRegistry(jobId, getJobVertexId());
 
@@ -720,6 +736,7 @@ public class Task
             // Make sure the user code classloader is accessible thread-locally.
             // We are setting the correct context class loader before instantiating the invokable
             // so that it is available to the invokable during its entire lifetime.
+            // tips 确保task本地线程可以访问用户代码类加载器
             executingThread.setContextClassLoader(userCodeClassLoader.asClassLoader());
 
             // When constructing invokable, separate threads can be constructed and thus should be
@@ -727,6 +744,7 @@ public class Task
             FlinkSecurityManager.monitorUserSystemExitForCurrentThread();
             try {
                 // now load and instantiate the task's invokable code
+                // tips 实例化task的反射调用对象
                 invokable =
                         loadAndInstantiateInvokable(
                                 userCodeClassLoader.asClassLoader(), nameOfInvokableClass, env);
@@ -742,6 +760,7 @@ public class Task
             // by the time we switched to running.
             this.invokable = invokable;
 
+            // tips restore&invoke
             restoreAndInvoke(invokable);
 
             // make sure, we enter the catch block if the task leaves the invoke() method due
@@ -908,18 +927,24 @@ public class Task
         try {
             // switch to the INITIALIZING state, if that fails, we have been canceled/failed in the
             // meantime
+            // tips 将task的状态从DEPLOYING过渡到INITIALIZING
             if (!transitionState(ExecutionState.DEPLOYING, ExecutionState.INITIALIZING)) {
                 throw new CancelTaskException();
             }
 
+            // tips ExecutionGraph switched from DEPLOYING to INITIALIZING（和task保持一致）
             taskManagerActions.updateTaskExecutionState(
                     new TaskExecutionState(executionId, ExecutionState.INITIALIZING));
 
             // make sure the user code classloader is accessible thread-locally
+            // tips 又往task线程里塞了一次用户代码类加载器
+            //  [FLINK-13384][runtime] Fix back pressure sampling for SourceStreamTask
             executingThread.setContextClassLoader(userCodeClassLoader.asClassLoader());
 
+            // tips 恢复作业的逻辑（后面再细看）
             runWithSystemExitMonitoring(finalInvokable::restore);
 
+            // tips 将task的状态从DEPLOYING过渡到RUNNING
             if (!transitionState(ExecutionState.INITIALIZING, ExecutionState.RUNNING)) {
                 throw new CancelTaskException();
             }
@@ -1066,6 +1091,7 @@ public class Task
      * @return true if the transition was successful, otherwise false
      */
     private boolean transitionState(ExecutionState currentState, ExecutionState newState) {
+        // tips enter
         return transitionState(currentState, newState, null);
     }
 
@@ -1081,6 +1107,9 @@ public class Task
             ExecutionState currentState, ExecutionState newState, Throwable cause) {
         if (STATE_UPDATER.compareAndSet(this, currentState, newState)) {
             if (cause == null) {
+                // tips
+                //  第一次进来，task switched from CREATED to DEPLOYING
+                //  第二次进来，task switched from DEPLOYING to INITIALIZING
                 LOG.info(
                         "{} ({}) switched from {} to {}.",
                         taskNameWithSubtask,

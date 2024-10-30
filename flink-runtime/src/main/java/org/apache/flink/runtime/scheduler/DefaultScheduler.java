@@ -215,7 +215,7 @@ public class DefaultScheduler extends SchedulerBase implements SchedulerOperatio
         log.info(
                 "Starting scheduling with scheduling strategy [{}]",
                 schedulingStrategy.getClass().getName());
-        // tips ExecutionGraph过渡到running状态
+        // tips 1、job switched from state CREATED to RUNNING
         transitionToRunning();
         // tips 启动调度，这里看PipelinedRegionSchedulingStrategy的实现
         schedulingStrategy.startScheduling();

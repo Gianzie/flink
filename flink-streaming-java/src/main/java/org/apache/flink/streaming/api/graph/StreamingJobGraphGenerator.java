@@ -1461,12 +1461,15 @@ public class StreamingJobGraphGenerator {
 
         Integer downStreamVertexID = edge.getTargetId();
 
-        // tips 上下游JobVertex
+        // tips 头JobVertex
         JobVertex headVertex = jobVertices.get(headOfChain);
+        // tips 下游JobVertex
         JobVertex downStreamVertex = jobVertices.get(downStreamVertexID);
 
         StreamConfig downStreamConfig = new StreamConfig(downStreamVertex.getConfiguration());
 
+        // tips 以map为例，如果edge只有一条，则这里的值为1（最少也为1），否则就会循环递增到edge的个数
+        //  这里设置的NUMBER_OF_NETWORK_INPUTS，在task invoke时会用到
         downStreamConfig.setNumberOfNetworkInputs(downStreamConfig.getNumberOfNetworkInputs() + 1);
 
         StreamPartitioner<?> partitioner = output.getPartitioner();

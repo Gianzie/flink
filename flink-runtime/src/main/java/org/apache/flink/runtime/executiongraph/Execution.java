@@ -574,6 +574,7 @@ public class Execution
             // tips 任务部署描述器（包含了在TM上部署所需要的所有信息）
             final TaskDeploymentDescriptor deployment =
                     TaskDeploymentDescriptorFactory.fromExecution(this)
+                            // tips 创建了PhysicalGraph中的ResultPartition和InputGate所对应的部署描述器
                             .createDeploymentDescriptor(
                                     slot.getAllocationId(),
                                     taskRestore,
@@ -1193,6 +1194,7 @@ public class Execution
     }
 
     boolean switchToRecovering() {
+        // tips 借助于task将ExecutionGraph switched from DEPLOYING to INITIALIZING
         if (switchTo(DEPLOYING, INITIALIZING)) {
             sendPartitionInfos();
             return true;
@@ -1207,6 +1209,7 @@ public class Execution
 
     private boolean switchTo(ExecutionState from, ExecutionState to) {
 
+        // tips enter
         if (transitionState(from, to)) {
             return true;
         } else {
@@ -1442,10 +1445,16 @@ public class Execution
         // tips
         //  第一次调用时，state=都是CREATED，currentState=CREATED，targetState=SCHEDULED
         //  第二次调用时，state=都是SCHEDULED，currentState=SCHEDULED，targetState=DEPLOYING
+        //  第一次调用时，state=CREATED，     currentState=CREATED，     targetState=SCHEDULED
+        //  第二次调用时，state=SCHEDULED，   currentState=SCHEDULED，   targetState=DEPLOYING
+        //  第三次调用时，state=DEPLOYING，   currentState=DEPLOYING，   targetState=INITIALIZING（由task反射执行时调用）
         if (state == currentState) {
             // tips
             //  第一次调用时，这里 switched from CREATED to SCHEDULED.
             //  第二次调用时，这里 switched from SCHEDULED to DEPLOYING.
+            //  第一次调用时，这里 switched from CREATED      to SCHEDULED.
+            //  第二次调用时，这里 switched from SCHEDULED    to DEPLOYING.
+            //  第三次调用时，这里 switched from DEPLOYING    to INITIALIZING.（由task反射执行时调用）
             state = targetState;
             markTimestamp(currentState, targetState);
 

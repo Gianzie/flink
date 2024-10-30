@@ -77,6 +77,7 @@ public interface SchedulerNG extends GlobalFailureHandler, AutoCloseableAsync {
     CompletableFuture<JobStatus> getJobTerminationFuture();
 
     default boolean updateTaskExecutionState(TaskExecutionState taskExecutionState) {
+        // tips enter
         return updateTaskExecutionState(new TaskExecutionStateTransition(taskExecutionState));
     }
 

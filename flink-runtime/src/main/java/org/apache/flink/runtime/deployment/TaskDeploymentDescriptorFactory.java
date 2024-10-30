@@ -125,36 +125,48 @@ public class TaskDeploymentDescriptorFactory {
                 executionId,
                 allocationID,
                 taskRestore,
+                // tips PhysicalGraph中的ResultPartition部署描述器
                 new ArrayList<>(producedPartitions),
+                // tips PhysicalGraph中的InputGate部署描述器
                 createInputGateDeploymentDescriptors());
     }
 
     private List<InputGateDeploymentDescriptor> createInputGateDeploymentDescriptors()
             throws IOException {
         List<InputGateDeploymentDescriptor> inputGates =
+                // tips ExecutionGraph中的ConsumerPartitionGroup的概念
                 new ArrayList<>(consumedPartitionGroups.size());
 
         for (ConsumedPartitionGroup consumedPartitionGroup : consumedPartitionGroups) {
             // If the produced partition has multiple consumers registered, we
             // need to request the one matching our sub task index.
+            // tips 如果生成的分区有多个消费者，我们需要请求与子任务索引相匹配的消费者
             // TODO Refactor after removing the consumers from the intermediate result partitions
 
+            // tips ExecutionGraph中的IntermediateResult
             IntermediateResult consumedIntermediateResult =
                     resultPartitionRetriever
                             .apply(consumedPartitionGroup.getFirst())
                             .getIntermediateResult();
 
+            // tips JobGraph中的IntermediateDataSet
             IntermediateDataSetID resultId = consumedIntermediateResult.getId();
             ResultPartitionType partitionType = consumedIntermediateResult.getResultType();
+            // tips 子任务需要消费的子分区范围
             IndexRange subpartitionRange =
                     executionVertexInputInfoRetriever.apply(resultId).getSubpartitionIndexRange();
 
             inputGates.add(
                     new InputGateDeploymentDescriptor(
+                            // tips JobGraph中的IntermediateDataSet
                             resultId,
+                            // tips ResultPartition类型
                             partitionType,
+                            // tips subtask需要消费的subpartition范围
                             subpartitionRange,
+                            // tips InputGate中的InputChannel数量
                             consumedPartitionGroup.size(),
+                            // tips shuffle描述器？
                             getConsumedPartitionShuffleDescriptors(
                                     consumedIntermediateResult, consumedPartitionGroup)));
         }

@@ -620,6 +620,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
             final JobID jobId = tdd.getJobId();
             final ExecutionAttemptID executionAttemptID = tdd.getExecutionAttemptId();
 
+            // tips job和JM的连接对象（TE将job注册到JM时创建的）
             final JobTable.Connection jobManagerConnection =
                     jobTable.getConnection(jobId)
                             .orElseThrow(
@@ -646,6 +647,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
                 throw new TaskSubmissionException(message);
             }
 
+            // tips 标记slot为active状态（和handleAcceptedSlotOffers函数似乎重复调用了）
             if (!taskSlotTable.tryMarkSlotActive(jobId, tdd.getAllocationId())) {
                 final String message =
                         "No task slot allocated for job ID "
@@ -659,6 +661,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
 
             // re-integrate offloaded data:
             try {
+                // tips 从blob加载外部数据到tdd中
                 tdd.loadBigData(taskExecutorBlobService.getPermanentBlobService());
             } catch (IOException | ClassNotFoundException e) {
                 throw new TaskSubmissionException(
@@ -689,15 +692,18 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
                                 + ")");
             }
 
+            // tips job指标相关
             TaskManagerJobMetricGroup jobGroup =
                     taskManagerMetricGroup.addJob(
                             jobInformation.getJobId(), jobInformation.getJobName());
 
             // note that a pre-existing job group can NOT be closed concurrently - this is done by
             // the same TM thread in removeJobMetricsGroup
+            // tips task指标相关
             TaskMetricGroup taskMetricGroup =
                     jobGroup.addTask(tdd.getExecutionAttemptId(), taskInformation.getTaskName());
 
+            // tips 由InputSplitProvider（输入分片提供者）源源不断提供input供flink消费读取数据
             InputSplitProvider inputSplitProvider =
                     new RpcInputSplitProvider(
                             jobManagerConnection.getJobManagerGateway(),
@@ -705,6 +711,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
                             tdd.getExecutionAttemptId(),
                             taskManagerConfiguration.getRpcTimeout());
 
+            // tips task算子事件网关，用来发送operator event/request到coordinator
             final TaskOperatorEventGateway taskOperatorEventGateway =
                     new RpcTaskOperatorEventGateway(
                             jobManagerConnection.getJobManagerGateway(),
@@ -762,6 +769,9 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
                 throw new TaskSubmissionException("Could not submit task.", e);
             }
 
+            // tips 构建task
+            //  创建了PhysicalGraph（并不是真实存在的概念）：ResultPartition + InputGate
+            //  创建了thread，下面来启动
             Task task =
                     new Task(
                             jobInformation,
@@ -794,6 +804,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
 
             taskMetricGroup.gauge(MetricNames.IS_BACK_PRESSURED, task::isBackPressured);
 
+            // tips TaskManager Logs中打印了该行
             log.info(
                     "Received task {} ({}), deploy into slot with allocation id {}.",
                     task.getTaskInfo().getTaskNameWithSubtasks(),
@@ -809,6 +820,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
             }
 
             if (taskAdded) {
+                // tips 启动task线程（每个task都是专用线程）
                 task.startTaskThread();
 
                 setupResultPartitionBookkeeping(
@@ -1990,6 +2002,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
         final ExecutionAttemptID executionAttemptID = taskExecutionState.getID();
 
         CompletableFuture<Acknowledge> futureAcknowledge =
+                // tips enter
                 jobMasterGateway.updateTaskExecutionState(taskExecutionState);
 
         futureAcknowledge.whenCompleteAsync(
@@ -2528,6 +2541,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
                                 unregisterTaskAndNotifyFinalState(
                                         jobMasterGateway, taskExecutionState.getID()));
             } else {
+                // tips enter
                 TaskExecutor.this.updateTaskExecutionState(jobMasterGateway, taskExecutionState);
             }
         }

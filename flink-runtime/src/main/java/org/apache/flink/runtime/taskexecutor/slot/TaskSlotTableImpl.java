@@ -505,6 +505,7 @@ public class TaskSlotTableImpl<T extends TaskSlotPayload> implements TaskSlotTab
         TaskSlot<T> taskSlot = getTaskSlot(allocationId);
 
         if (taskSlot != null && taskSlot.isAllocated(jobId, allocationId)) {
+            // tips enter
             return markExistingSlotActive(taskSlot);
         } else {
             return false;

@@ -1387,6 +1387,7 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
 
         if (attempt != null) {
             try {
+                // tips enter
                 final boolean stateUpdated = updateStateInternal(state, attempt);
                 maybeReleasePartitionGroupsFor(attempt);
                 return stateUpdated;
@@ -1408,6 +1409,7 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
 
         switch (state.getExecutionState()) {
             case INITIALIZING:
+                // tips task此时状态为INITIALIZING，去更改ExecutionGraph的状态
                 return attempt.switchToRecovering();
 
             case RUNNING:

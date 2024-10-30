@@ -482,6 +482,7 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
         try {
             checkNotNull(taskExecutionState, "taskExecutionState");
 
+            // tips enter
             if (schedulerNG.updateTaskExecutionState(taskExecutionState)) {
                 return CompletableFuture.completedFuture(Acknowledge.get());
             } else {
@@ -968,7 +969,7 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
                 jobGraph.getJobID(),
                 getFencingToken());
 
-        // tips 开始调度
+        // tips env.execute()最后调用到这里开始对task进行调度
         startScheduling();
     }
 

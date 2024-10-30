@@ -729,7 +729,10 @@ public abstract class SchedulerBase implements SchedulerNG, CheckpointScheduling
 
         final ExecutionAttemptID attemptId = taskExecutionState.getID();
         final Execution execution = executionGraph.getRegisteredExecutions().get(attemptId);
+        // tips
+        //  第一次由task调用到此时taskExecutionState为INITIALIZING，去更新ExecutionGraph状态
         if (execution != null && executionGraph.updateState(taskExecutionState)) {
+            // tips 校验task和ExecutionGraph的状态是否一致
             onTaskExecutionStateUpdate(execution, taskExecutionState);
             return true;
         }
