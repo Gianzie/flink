@@ -147,6 +147,10 @@ public class CheckpointedInputGate implements PullingAsyncDataInput<BufferOrEven
 
     @Override
     public Optional<BufferOrEvent> pollNext() throws IOException, InterruptedException {
+        // tips get next element from channel
+        //  task init时根据InEdge.size创建SingleInputGate/UnionInputGate
+        //  eg：OneInputStreamTask只有一条InEdge，就创建SingleInputGate
+        //  eg：TwoInputStreamTask有两条InEdge，创建UnionInputGate
         Optional<BufferOrEvent> next = inputGate.pollNext();
 
         if (!next.isPresent()) {
@@ -156,6 +160,7 @@ public class CheckpointedInputGate implements PullingAsyncDataInput<BufferOrEven
         BufferOrEvent bufferOrEvent = next.get();
 
         if (bufferOrEvent.isEvent()) {
+            // tips 处理event
             return handleEvent(bufferOrEvent);
         } else if (bufferOrEvent.isBuffer()) {
             /**
@@ -176,18 +181,26 @@ public class CheckpointedInputGate implements PullingAsyncDataInput<BufferOrEven
 
     private Optional<BufferOrEvent> handleEvent(BufferOrEvent bufferOrEvent) throws IOException {
         Class<? extends AbstractEvent> eventClass = bufferOrEvent.getEvent().getClass();
+        // tips 检查点屏障：flink exactly-once的核心概念（使用了分布式快照算法）
         if (eventClass == CheckpointBarrier.class) {
             CheckpointBarrier checkpointBarrier = (CheckpointBarrier) bufferOrEvent.getEvent();
             barrierHandler.processBarrier(checkpointBarrier, bufferOrEvent.getChannelInfo(), false);
         } else if (eventClass == CancelCheckpointMarker.class) {
+            // tips 取消正在进行的ck标记（可能因为超时、手动取消等原因，需要通知下游ck无效保持一致性）
+            //  使用场景：检查点超时、手动取消、故障恢复
             barrierHandler.processCancellationBarrier(
                     (CancelCheckpointMarker) bufferOrEvent.getEvent(),
                     bufferOrEvent.getChannelInfo());
         } else if (eventClass == EndOfData.class) {
+            // tips 子分区内的最后一条数据，由下游task确认，这样就可以为上游task做最终的ck
+            //  使用场景：批数据？
             inputGate.acknowledgeAllRecordsProcessed(bufferOrEvent.getChannelInfo());
         } else if (eventClass == EndOfPartitionEvent.class) {
+            // tips 标记子分区完全消费
+            //  使用场景：Kafka的多分区消费？
             barrierHandler.processEndOfPartition(bufferOrEvent.getChannelInfo());
         } else if (eventClass == EventAnnouncement.class) {
+            // tips EventAnnouncement宣布存在或接收AbstractEvent。announcedEvent由其序列号标识。
             EventAnnouncement eventAnnouncement = (EventAnnouncement) bufferOrEvent.getEvent();
             AbstractEvent announcedEvent = eventAnnouncement.getAnnouncedEvent();
             checkState(
@@ -200,6 +213,7 @@ public class CheckpointedInputGate implements PullingAsyncDataInput<BufferOrEven
                     eventAnnouncement.getSequenceNumber(),
                     bufferOrEvent.getChannelInfo());
         } else if (bufferOrEvent.getEvent().getClass() == EndOfChannelStateEvent.class) {
+            // tips 恢复状态结束
             upstreamRecoveryTracker.handleEndOfRecovery(bufferOrEvent.getChannelInfo());
         }
         return Optional.of(bufferOrEvent);

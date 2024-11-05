@@ -235,12 +235,20 @@ public class OneInputStreamTask<IN, OUT> extends StreamTask<OUT, OneInputStreamO
             this.operator = checkNotNull(operator);
             this.watermarkGauge = checkNotNull(watermarkGauge);
             this.numRecordsIn = checkNotNull(numRecordsIn);
+            // tips operator的赋值逻辑（这里指StreamTask）：
+            //  if taskFinishedOnRestoreInput then FinishedOnRestoreInput
+            //  else mainOperator（the main operator that consumes the input streams of this task.）
             this.recordProcessor = RecordProcessorUtils.getRecordProcessor(operator);
         }
 
         @Override
         public void emitRecord(StreamRecord<IN> record) throws Exception {
+            // tips 统计：输入数据条数
             numRecordsIn.inc();
+            // tips
+            //  第一步：接收数据
+            //  第二步：调用RecordProcessorUtils的input::processElement
+            //  第三步：跳转到processElement对应的实现。eg：map->StreamMap, flatMap->StreamFlatMap
             recordProcessor.accept(record);
         }
 

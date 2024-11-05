@@ -75,6 +75,7 @@ public class PrintSinkFunction<IN> extends RichSinkFunction<IN>
 
     @Override
     public void invoke(IN record) {
+        // tips enter
         writer.write(record);
     }
 

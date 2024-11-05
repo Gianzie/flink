@@ -94,20 +94,29 @@ public abstract class AbstractStreamTaskNetworkInput<
 
         while (true) {
             // get the stream element from the deserializer
+            // tips 初始化时currentRecordDeserializer is null，在下面的processBuffer()中赋值
             if (currentRecordDeserializer != null) {
                 RecordDeserializer.DeserializationResult result;
                 try {
+                    // tips 从buffer的MemorySegment中反序列化数据
+                    //  partial_record：                 isFullRecord：false，isBufferConsumed：true
+                    //  intermediate_record_from_buffer：isFullRecord：true， isBufferConsumed：false
+                    //  last_record_from_buffer：        isFullRecord：true， isBufferConsumed：true
                     result = currentRecordDeserializer.getNextRecord(deserializationDelegate);
                 } catch (IOException e) {
                     throw new IOException(
                             String.format("Can't get next record for channel %s", lastChannel), e);
                 }
+                // tips 如果buffer已经被消费，则currentRecordDeserializer置空
                 if (result.isBufferConsumed()) {
                     currentRecordDeserializer = null;
                 }
 
+                // tips 如果从buffer中读到的是完整数据
                 if (result.isFullRecord()) {
+                    // tips 处理数据（这里体现出watermark是一种特殊的数据）
                     processElement(deserializationDelegate.getInstance(), output);
+                    // tips 可以批量发出record（邮箱里没有邮件？ & task可用状态）
                     if (canEmitBatchOfRecords.check()) {
                         continue;
                     }
@@ -115,14 +124,17 @@ public abstract class AbstractStreamTaskNetworkInput<
                 }
             }
 
+            // tips 拿到next element，并根据类型 通知下游 or 处理barrier
             Optional<BufferOrEvent> bufferOrEvent = checkpointedInputGate.pollNext();
             if (bufferOrEvent.isPresent()) {
                 // return to the mailbox after receiving a checkpoint barrier to avoid processing of
                 // data after the barrier before checkpoint is performed for unaligned checkpoint
                 // mode
                 if (bufferOrEvent.get().isBuffer()) {
+                    // tips 这里给currentRecordDeserializer赋值，就可以提取出数据进行处理了
                     processBuffer(bufferOrEvent.get());
                 } else {
+                    // tips 处理event
                     DataInputStatus status = processEvent(bufferOrEvent.get());
                     if (status == DataInputStatus.MORE_AVAILABLE && canEmitBatchOfRecords.check()) {
                         continue;
@@ -143,6 +155,7 @@ public abstract class AbstractStreamTaskNetworkInput<
 
     private void processElement(StreamElement recordOrMark, DataOutput<T> output) throws Exception {
         if (recordOrMark.isRecord()) {
+            // tips 发出数据
             output.emitRecord(recordOrMark.asRecord());
         } else if (recordOrMark.isWatermark()) {
             statusWatermarkValve.inputWatermark(

@@ -400,6 +400,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
 
             this.mailboxProcessor =
                     new MailboxProcessor(
+                            // tips 由MailboxDefaultAction调用，调用自身的processInput
                             this::processInput, mailbox, actionExecutor, mailboxMetricsControl);
 
             // Should be closed last.
@@ -547,6 +548,12 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
      * @throws Exception on any problems in the action.
      */
     protected void processInput(MailboxDefaultAction.Controller controller) throws Exception {
+        // tips inputProcessor：在restore中的init()初始化
+        //  可以由多个类实例化：SourceOperatorStreamTask、OneInputStreamTask、TwoInputStreamTask、MultipleInputStreamTask
+        //  但只有两个类实现：StreamOneInputProcessor、StreamMultipleInputProcessor
+        //  status：正常运行的情况下，一般status就是以下两种
+        //   MORE_AVAILABLE：input中还有数据可用
+        //   NOTHING_AVAILABLE：当前没读到数据，但未来可能会有数据
         DataInputStatus status = inputProcessor.processInput();
         switch (status) {
             case MORE_AVAILABLE:
@@ -787,6 +794,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
         // Allow invoking method 'invoke' without having to call 'restore' before it.
         if (!isRunning) {
             LOG.debug("Restoring during invoke will be called.");
+            // tips invoke前一定要restore
             restoreInternal();
         }
 
@@ -797,6 +805,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
 
         // let the task do its work
         getEnvironment().getMetricGroup().getIOMetricGroup().markTaskStart();
+        // tips 运行邮箱，processInputData
         runMailboxLoop();
 
         // if this left the run() method cleanly despite the fact that this was canceled,

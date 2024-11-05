@@ -53,6 +53,9 @@ public class RecordProcessorUtils {
         }
 
         if (canOmitSetKeyContext) {
+            // tips 非键控情况下 处理数据（这里还是对方法的引用，真正的执行在OneInputStreamTask的recordProcessor.accept(record)）
+            //  map：StreamMap
+            //  print：StreamSink
             return input::processElement;
         } else {
             return record -> {

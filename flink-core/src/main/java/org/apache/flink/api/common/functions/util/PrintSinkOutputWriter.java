@@ -70,6 +70,7 @@ public class PrintSinkOutputWriter<IN> implements Serializable, SinkWriter<IN> {
     }
 
     public void write(IN record) {
+        // tips 调用PrintStream.println
         stream.println(completedPrefix + record.toString());
     }
 

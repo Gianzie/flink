@@ -214,6 +214,7 @@ public class MailboxProcessor implements Closeable {
     public void runMailboxLoop() throws Exception {
         suspended = !mailboxLoopRunning;
 
+        // tips 读/写邮件，管理生命周期
         final TaskMailbox localMailbox = mailbox;
 
         checkState(
@@ -222,12 +223,14 @@ public class MailboxProcessor implements Closeable {
 
         assert localMailbox.getState() == TaskMailbox.State.OPEN : "Mailbox must be opened!";
 
+        // tips 连接到MailboxProcessor的实现
         final MailboxController mailboxController = new MailboxController(this);
 
         while (isNextLoopPossible()) {
             // The blocking `processMail` call will not return until default action is available.
             processMail(localMailbox, false);
             if (isNextLoopPossible()) {
+                // tips mailboxDefaultAction在构建StreamTask时初始化，并且使用lambda processInput
                 mailboxDefaultAction.runDefaultAction(
                         mailboxController); // lock is acquired inside default action as needed
             }

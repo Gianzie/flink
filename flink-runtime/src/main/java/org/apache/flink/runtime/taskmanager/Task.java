@@ -956,6 +956,8 @@ public class Task
             taskManagerActions.updateTaskExecutionState(
                     new TaskExecutionState(executionId, ExecutionState.RUNNING));
 
+            // tips ！！！invoke逻辑！！！
+            //  流处理情况下查看StreamTask实现
             runWithSystemExitMonitoring(finalInvokable::invoke);
         } catch (Throwable throwable) {
             try {

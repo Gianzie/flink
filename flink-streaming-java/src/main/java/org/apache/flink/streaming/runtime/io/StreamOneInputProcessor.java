@@ -62,6 +62,9 @@ public final class StreamOneInputProcessor<IN> implements StreamInputProcessor {
 
     @Override
     public DataInputStatus processInput() throws Exception {
+        // tips emit数据到DataOutput，并根据返回值判断当前input是否还有可用数据
+        //  source：StreamTaskSourceInput及其两个子类：StreamTaskExternallyInducedSourceInput、StreamTaskFinishedOnRestoreSourceInput
+        //  map：if restoreJob RescalingStreamTaskNetworkInput else StreamTaskNetworkInput
         DataInputStatus status = input.emitNext(output);
 
         if (status == DataInputStatus.END_OF_DATA) {
