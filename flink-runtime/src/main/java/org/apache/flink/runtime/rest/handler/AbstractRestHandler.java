@@ -80,6 +80,7 @@ public abstract class AbstractRestHandler<
         CompletableFuture<P> response;
 
         try {
+            // tips 处理HTTP请求
             response = handleRequest(handlerRequest, gateway);
         } catch (RestHandlerException e) {
             response = FutureUtils.completedExceptionally(e);

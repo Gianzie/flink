@@ -514,6 +514,7 @@ public class RestClusterClient<T> implements ClusterClient<T> {
             final JobID jobId,
             final @Nullable String savepointDirectory,
             final SavepointFormatType formatType) {
+        // tips enter
         return triggerSavepoint(jobId, savepointDirectory, false, formatType);
     }
 
@@ -560,6 +561,7 @@ public class RestClusterClient<T> implements ClusterClient<T> {
         savepointTriggerMessageParameters.jobID.resolve(jobId);
 
         final CompletableFuture<TriggerResponse> responseFuture =
+                // tips enter
                 sendRequest(
                         savepointTriggerHeaders,
                         savepointTriggerMessageParameters,
@@ -945,6 +947,7 @@ public class RestClusterClient<T> implements ClusterClient<T> {
                                         webMonitorBaseUrl -> {
                                             try {
                                                 final CompletableFuture<P> future =
+                                                        // tips 发送请求到Dispatcher的WebMonitorEndpoint来处理请求
                                                         restClient.sendRequest(
                                                                 webMonitorBaseUrl.getHost(),
                                                                 webMonitorBaseUrl.getPort(),

@@ -877,6 +877,7 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
             final SavepointFormatType formatType,
             final Time timeout) {
 
+        // tips 查看SchedulerBase的实现
         return schedulerNG.triggerSavepoint(targetDirectory, cancelJob, formatType);
     }
 

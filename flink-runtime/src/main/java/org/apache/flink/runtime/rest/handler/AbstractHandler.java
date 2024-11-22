@@ -193,6 +193,7 @@ public abstract class AbstractHandler<
 
             log.trace("Starting request processing.");
             CompletableFuture<Void> requestProcessingFuture =
+                    // tips 请求到对应的handler
                     respondToRequest(ctx, httpRequest, handlerRequest, gateway);
 
             final FileUploads finalUploadedFiles = uploadedFiles;

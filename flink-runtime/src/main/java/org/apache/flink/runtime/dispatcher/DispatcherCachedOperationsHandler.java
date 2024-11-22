@@ -107,6 +107,7 @@ public class DispatcherCachedOperationsHandler {
         return registerOperationIdempotently(
                 operationKey,
                 () ->
+                        // tips 找到triggerSavepointFunction的赋值逻辑
                         triggerSavepointFunction.apply(
                                 operationKey.getJobId(),
                                 targetDirectory,

@@ -447,8 +447,10 @@ public class CheckpointCoordinator {
      */
     public CompletableFuture<CompletedCheckpoint> triggerSavepoint(
             @Nullable final String targetLocation, final SavepointFormatType formatType) {
+        // tips 配置（sp和ck都适用）
         final CheckpointProperties properties =
                 CheckpointProperties.forSavepoint(!unalignedCheckpointsEnabled, formatType);
+        // tips enter
         return triggerSavepointInternal(properties, targetLocation);
     }
 
@@ -480,6 +482,7 @@ public class CheckpointCoordinator {
 
         checkNotNull(checkpointProperties);
 
+        // tips enter（非周期性调用）
         return triggerCheckpointFromCheckpointThread(checkpointProperties, targetLocation, false);
     }
 
@@ -490,6 +493,7 @@ public class CheckpointCoordinator {
         final CompletableFuture<CompletedCheckpoint> resultFuture = new CompletableFuture<>();
         timer.execute(
                 () ->
+                        // tips enter
                         triggerCheckpoint(checkpointProperties, targetLocation, isPeriodic)
                                 .whenComplete(
                                         (completedCheckpoint, throwable) -> {
@@ -561,8 +565,10 @@ public class CheckpointCoordinator {
             @Nullable String externalSavepointLocation,
             boolean isPeriodic) {
 
+        // tips ck触发请求对象
         CheckpointTriggerRequest request =
                 new CheckpointTriggerRequest(props, externalSavepointLocation, isPeriodic);
+        // tips 用户触发sp后开始执行
         chooseRequestToExecute(request).ifPresent(this::startTriggeringCheckpoint);
         return request.onCompletionPromise;
     }
@@ -570,6 +576,7 @@ public class CheckpointCoordinator {
     private void startTriggeringCheckpoint(CheckpointTriggerRequest request) {
         try {
             synchronized (lock) {
+                // tips 非周期性调用
                 preCheckGlobalState(request.isPeriodic);
             }
 
@@ -579,10 +586,15 @@ public class CheckpointCoordinator {
 
             final long timestamp = System.currentTimeMillis();
 
+            // tips 检查点计划：指明哪些task需要触发，等待某个检查点的确认/提交
             CompletableFuture<CheckpointPlan> checkpointPlanFuture =
                     checkpointPlanCalculator.calculateCheckpointPlan();
 
+            // tips 是否 初始化ck保存位置
+            //  baseLocationsForCheckpointInitialized：是否已经初始化ck保存位置？（程序初始化时为false）
+            //  initializeBaseLocations在程序初始化时为true，后面代码初始化一次，之后就不再需要初始化
             boolean initializeBaseLocations = !baseLocationsForCheckpointInitialized;
+            // tips 执行一次就可以永远为true
             baseLocationsForCheckpointInitialized = true;
 
             CompletableFuture<Void> masterTriggerCompletionPromise = new CompletableFuture<>();
@@ -605,6 +617,7 @@ public class CheckpointCoordinator {
                                     executor)
                             .thenApplyAsync(
                                     (checkpointInfo) ->
+                                            // tips 创建PendingCheckpoint：实时统计各个task的ck信息，待转换为CompletedCheckpoint
                                             createPendingCheckpoint(
                                                     timestamp,
                                                     request.props,
@@ -621,6 +634,7 @@ public class CheckpointCoordinator {
                                     pendingCheckpoint -> {
                                         try {
                                             CheckpointStorageLocation checkpointStorageLocation =
+                                                    // tips 初始化ck存储位置（区分sp和ck）
                                                     initializeCheckpointLocation(
                                                             pendingCheckpoint.getCheckpointID(),
                                                             request.props,
@@ -646,6 +660,7 @@ public class CheckpointCoordinator {
                                                     checkpointInfo.f1);
                                         }
                                         return OperatorCoordinatorCheckpoints
+                                                // tips task确认ck完成
                                                 .triggerAndAcknowledgeAllCoordinatorCheckpointsWithCompletion(
                                                         coordinatorsToCheckpoint,
                                                         pendingCheckpoint,
@@ -701,6 +716,7 @@ public class CheckpointCoordinator {
                                                 onTriggerFailure(checkpoint, throwable);
                                             }
                                         } else {
+                                            // tips 触发ck
                                             triggerCheckpointRequest(
                                                     request, timestamp, checkpoint);
                                         }
@@ -734,6 +750,7 @@ public class CheckpointCoordinator {
                             CheckpointFailureReason.TRIGGER_CHECKPOINT_FAILURE,
                             checkpoint.getFailureCause()));
         } else {
+            // tips 触发task的ck
             triggerTasks(request, timestamp, checkpoint)
                     .exceptionally(
                             failure -> {
@@ -765,6 +782,7 @@ public class CheckpointCoordinator {
             // It is possible that the tasks has finished
             // checkpointing at this point.
             // So we need to complete this pending checkpoint.
+            // tips ck可能已经完成，PendingCheckpoint -> CompletedCheckpoint
             if (maybeCompleteCheckpoint(checkpoint)) {
                 onTriggerSuccess();
             }
@@ -792,13 +810,16 @@ public class CheckpointCoordinator {
                         alignedCheckpointTimeout);
 
         // send messages to the tasks to trigger their checkpoints
+        // tips 发消息给task来触发他们的ck
         List<CompletableFuture<Acknowledge>> acks = new ArrayList<>();
         for (Execution execution : checkpoint.getCheckpointPlan().getTasksToTrigger()) {
             if (request.props.isSynchronous()) {
+                // tips sp
                 acks.add(
                         execution.triggerSynchronousSavepoint(
                                 checkpointId, timestamp, checkpointOptions));
             } else {
+                // tips ck
                 acks.add(execution.triggerCheckpoint(checkpointId, timestamp, checkpointOptions));
             }
         }
@@ -823,12 +844,15 @@ public class CheckpointCoordinator {
         final CheckpointStorageLocation checkpointStorageLocation;
         if (props.isSavepoint()) {
             checkpointStorageLocation =
+                    // tips sp类型：初始化ck存储位置
                     checkpointStorageView.initializeLocationForSavepoint(
                             checkpointID, externalSavepointLocation);
         } else {
+            // tips 是否需要初始化ck保存位置（只有程序第一次运行需要执行）
             if (initializeBaseLocations) {
                 checkpointStorageView.initializeBaseLocationsForCheckpoint();
             }
+            // tips ck类型：初始化ck存储位置
             checkpointStorageLocation =
                     checkpointStorageView.initializeLocationForCheckpoint(checkpointID);
         }
@@ -856,8 +880,10 @@ public class CheckpointCoordinator {
         }
 
         PendingCheckpointStats pendingCheckpointStats =
+                // tips 跟踪统计进行中的检查点信息，实时处理子任务的ck状态：成功、失败、
                 trackPendingCheckpointStats(checkpointID, checkpointPlan, props, timestamp);
 
+        // tips PendingCheckpoint，如果所有任务acknowledge，则转换为CompletedCheckpoint
         final PendingCheckpoint checkpoint =
                 new PendingCheckpoint(
                         job,
@@ -886,6 +912,7 @@ public class CheckpointCoordinator {
             }
         }
 
+        // tips JobManager Logs中打印了该行
         LOG.info(
                 "Triggering checkpoint {} (type={}) @ {} for job {}.",
                 checkpointID,
@@ -1040,6 +1067,7 @@ public class CheckpointCoordinator {
                     if (shutdown) {
                         return false;
                     }
+                    // tips pending -> completed
                     completePendingCheckpoint(checkpoint);
                 } catch (CheckpointException ce) {
                     onTriggerFailure(checkpoint, ce);
@@ -2299,9 +2327,11 @@ public class CheckpointCoordinator {
                                         ExecutionJobVertex::getParallelism));
 
         PendingCheckpointStats pendingCheckpointStats =
+                // tips 创建一个进行中的ck跟踪器
                 statsTracker.reportPendingCheckpoint(
                         checkpointId, checkpointTimestamp, props, vertices);
 
+        // tips 统计ck计划里 已完成task的ck状态
         reportFinishedTasks(pendingCheckpointStats, checkpointPlan.getFinishedTasks());
 
         return pendingCheckpointStats;
@@ -2312,6 +2342,7 @@ public class CheckpointCoordinator {
         long now = System.currentTimeMillis();
         finishedTasks.forEach(
                 execution ->
+                        // tips 统计单个task的ck状态（webUI Checkpoints页面的统计信息）
                         pendingCheckpointStats.reportSubtaskStats(
                                 execution.getVertex().getJobvertexId(),
                                 new SubtaskStateStats(execution.getParallelSubtaskIndex(), now)));

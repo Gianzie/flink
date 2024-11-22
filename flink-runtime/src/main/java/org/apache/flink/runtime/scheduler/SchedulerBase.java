@@ -863,21 +863,26 @@ public abstract class SchedulerBase implements SchedulerNG, CheckpointScheduling
             final SavepointFormatType formatType) {
         mainThreadExecutor.assertRunningInMainThread();
 
+        // tips ck协调器
         final CheckpointCoordinator checkpointCoordinator =
                 executionGraph.getCheckpointCoordinator();
+        // tips 检查sp所需的条件是否满足
         StopWithSavepointTerminationManager.checkSavepointActionPreconditions(
                 checkpointCoordinator, targetDirectory, getJobId(), log);
 
+        // tips JobManager Logs中打印了该行
         log.info(
                 "Triggering {}savepoint for job {}.",
                 cancelJob ? "cancel-with-" : "",
                 jobGraph.getJobID());
 
+        // tips 是否取消/终止任务
         if (cancelJob) {
             stopCheckpointScheduler();
         }
 
         return checkpointCoordinator
+                // tips enter
                 .triggerSavepoint(targetDirectory, formatType)
                 .thenApply(CompletedCheckpoint::getExternalPointer)
                 .handleAsync(

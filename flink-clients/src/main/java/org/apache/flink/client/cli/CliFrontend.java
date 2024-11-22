@@ -757,6 +757,7 @@ public class CliFrontend {
                                     clusterClient,
                                     savepointOptions.getSavepointPath(),
                                     getClientTimeout(effectiveConfiguration)));
+        // tips sp
         } else {
             String[] cleanedArgs = savepointOptions.getArgs();
 
@@ -788,6 +789,7 @@ public class CliFrontend {
                     activeCommandLine,
                     commandLine,
                     (clusterClient, effectiveConfiguration) ->
+                            // tips 发送消息给JobMaster，触发ck
                             triggerSavepoint(
                                     clusterClient,
                                     jobId,
@@ -808,6 +810,7 @@ public class CliFrontend {
         logAndSysout("Triggering savepoint for job " + jobId + '.');
 
         CompletableFuture<String> savepointPathFuture =
+                // tips 非本地模式下查看RestClusterClient实现
                 clusterClient.triggerSavepoint(jobId, savepointDirectory, formatType);
 
         logAndSysout("Waiting for response...");
@@ -1119,6 +1122,7 @@ public class CliFrontend {
                     stop(params);
                     return 0;
                 case ACTION_SAVEPOINT:
+                    // tips 触发sp
                     savepoint(params);
                     return 0;
                 case "-h":

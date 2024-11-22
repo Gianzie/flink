@@ -871,6 +871,7 @@ public class Execution
         return triggerCheckpointHelper(checkpointId, timestamp, checkpointOptions);
     }
 
+    // tips ck和sp公用
     private CompletableFuture<Acknowledge> triggerCheckpointHelper(
             long checkpointId, long timestamp, CheckpointOptions checkpointOptions) {
 
@@ -879,6 +880,7 @@ public class Execution
         if (slot != null) {
             final TaskManagerGateway taskManagerGateway = slot.getTaskManagerGateway();
 
+            // tips 调用TM执行ck
             return taskManagerGateway.triggerCheckpoint(
                     attemptId, getVertex().getJobId(), checkpointId, timestamp, checkpointOptions);
         }

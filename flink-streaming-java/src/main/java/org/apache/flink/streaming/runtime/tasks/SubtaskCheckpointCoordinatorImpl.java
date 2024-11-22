@@ -294,10 +294,12 @@ class SubtaskCheckpointCoordinatorImpl implements SubtaskCheckpointCoordinator {
 
         // Step (0): Record the last triggered checkpointId and abort the sync phase of checkpoint
         // if necessary.
+        // tips 记录最后一次触发的ckId，如果有必要的话终止ck的同步阶段
         lastCheckpointId = metadata.getCheckpointId();
         if (checkAndClearAbortedStatus(metadata.getCheckpointId())) {
             // broadcast cancel checkpoint marker to avoid downstream back-pressure due to
             // checkpoint barrier align.
+            // tips 如果需要终止ck同步的话，广播取消ck标记，避免下游由于ck对齐导致背压
             operatorChain.broadcastEvent(new CancelCheckpointMarker(metadata.getCheckpointId()));
             channelStateWriter.abort(
                     metadata.getCheckpointId(),
@@ -311,6 +313,7 @@ class SubtaskCheckpointCoordinatorImpl implements SubtaskCheckpointCoordinator {
 
         // if checkpoint has been previously unaligned, but was forced to be aligned (pointwise
         // connection), revert it here so that it can jump over output data
+        // tips 如果检查点之前未对齐，但被强制对齐，则在此处恢复以便可以跳过输出的数据
         if (options.getAlignment() == CheckpointOptions.AlignmentType.FORCED_ALIGNED) {
             options = options.withUnalignedSupported();
             initInputsCheckpoint(metadata.getCheckpointId(), options);
@@ -318,32 +321,37 @@ class SubtaskCheckpointCoordinatorImpl implements SubtaskCheckpointCoordinator {
 
         // Step (1): Prepare the checkpoint, allow operators to do some pre-barrier work.
         //           The pre-barrier work should be nothing or minimal in the common case.
+        // tips 准备ck，允许算子做一些pre-barrier工作，这个工作应该不做任何事情或很小的事情
         operatorChain.prepareSnapshotPreBarrier(metadata.getCheckpointId());
 
         // Step (2): Send the checkpoint barrier downstream
+        // tips 发送ck barrier到下游
         LOG.debug(
                 "Task {} broadcastEvent at {}, triggerTime {}, passed time {}",
                 taskName,
                 System.currentTimeMillis(),
                 metadata.getTimestamp(),
                 System.currentTimeMillis() - metadata.getTimestamp());
+        // tips 构建ck barrier
         CheckpointBarrier checkpointBarrier =
                 new CheckpointBarrier(metadata.getCheckpointId(), metadata.getTimestamp(), options);
+        // tips 广播event
         operatorChain.broadcastEvent(checkpointBarrier, options.isUnalignedCheckpoint());
 
         // Step (3): Register alignment timer to timeout aligned barrier to unaligned barrier
+        // tips 注册 对齐定时器，用来将 对齐屏障 超时到 非对齐屏障
         registerAlignmentTimer(metadata.getCheckpointId(), operatorChain, checkpointBarrier);
 
         // Step (4): Prepare to spill the in-flight buffers for input and output
+        // tips 准备溢写作为input/output的在途缓冲区
         if (options.needsChannelState()) {
             // output data already written while broadcasting event
             channelStateWriter.finishOutput(metadata.getCheckpointId());
         }
 
         // Step (5): Take the state snapshot. This should be largely asynchronous, to not impact
-        // progress of the
-        // streaming topology
-
+        // progress of the streaming topology
+        // tips 拍摄状态快照，异步操作，避免影响流拓扑的进度
         Map<OperatorID, OperatorSnapshotFutures> snapshotFutures =
                 new HashMap<>(operatorChain.getNumberOfOperators());
         try {

@@ -1149,6 +1149,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
 
                         if (noUnfinishedInputGates) {
                             result.complete(
+                                    // tips 没有未完成的InputGate，即所有输入数据处理完毕
                                     triggerCheckpointAsyncInMailbox(
                                             checkpointMetaData, checkpointOptions));
                         } else {
@@ -1189,9 +1190,11 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
             subtaskCheckpointCoordinator.initInputsCheckpoint(
                     checkpointMetaData.getCheckpointId(), checkpointOptions);
 
+            // tips 执行ck
             boolean success =
                     performCheckpoint(checkpointMetaData, checkpointOptions, checkpointMetrics);
             if (!success) {
+                // tips 如果执行失败，拒绝ck逻辑
                 declineCheckpoint(checkpointMetaData.getCheckpointId());
             }
             return success;
@@ -1317,6 +1320,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
                             this.finalCheckpointMinId = checkpointMetaData.getCheckpointId();
                         }
 
+                        // tips 每个task执行ck的过程
                         subtaskCheckpointCoordinator.checkpointState(
                                 checkpointMetaData,
                                 checkpointOptions,

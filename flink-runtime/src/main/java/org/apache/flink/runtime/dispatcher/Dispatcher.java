@@ -298,6 +298,7 @@ public abstract class Dispatcher extends FencedRpcEndpoint<DispatcherId>
                 new DispatcherCachedOperationsHandler(
                         dispatcherServices.getOperationCaches(),
                         this::triggerCheckpointAndGetCheckpointID,
+                        // tips 由Dispatcher触发Savepoint
                         this::triggerSavepointAndGetLocation,
                         this::stopWithSavepointAndGetLocation);
 
@@ -1037,6 +1038,7 @@ public abstract class Dispatcher extends FencedRpcEndpoint<DispatcherId>
         return performOperationOnJobMasterGateway(
                 jobId,
                 gateway ->
+                        // tips JobMasterGateway去触发Savepoint
                         gateway.triggerSavepoint(
                                 targetDirectory,
                                 savepointMode.isTerminalMode(),

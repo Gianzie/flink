@@ -1366,6 +1366,7 @@ public class Task
             checkState(invokable instanceof CheckpointableTask, "invokable is not checkpointable");
             try {
                 ((CheckpointableTask) invokable)
+                        // tips enter
                         .triggerCheckpointAsync(checkpointMetaData, checkpointOptions)
                         .handle(
                                 (triggerResult, exception) -> {

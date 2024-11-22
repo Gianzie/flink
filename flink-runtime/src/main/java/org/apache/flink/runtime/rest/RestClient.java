@@ -350,8 +350,10 @@ public class RestClient implements AutoCloseableAsync {
                     R request,
                     Collection<FileUpload> fileUploads)
                     throws IOException {
+        // tips 支持的API版本？
         Collection<? extends RestAPIVersion> supportedAPIVersions =
                 messageHeaders.getSupportedAPIVersions();
+        // tips enter
         return sendRequest(
                 targetAddress,
                 targetPort,
@@ -415,6 +417,7 @@ public class RestClient implements AutoCloseableAsync {
         ByteBuf payload =
                 Unpooled.wrappedBuffer(sw.toString().getBytes(ConfigConstants.DEFAULT_CHARSET));
 
+        // tips 构建访问WebMonitorEndpoint的HttpRequest
         Request httpRequest =
                 createRequest(
                         targetAddress + ':' + targetPort,
@@ -438,6 +441,7 @@ public class RestClient implements AutoCloseableAsync {
                                     typeParameters.toArray(new Class<?>[typeParameters.size()]));
         }
 
+        // tips 提交请求
         return submitRequest(targetAddress, targetPort, httpRequest, responseType);
     }
 
@@ -523,6 +527,7 @@ public class RestClient implements AutoCloseableAsync {
         final CompletableFuture<Channel> channelFuture = new CompletableFuture<>();
         responseChannelFutures.add(channelFuture);
 
+        // tips bootstrap：Netty的客户端启动器，连接到Dispatcher
         final ChannelFuture connectFuture = bootstrap.connect(targetAddress, targetPort);
         connectFuture.addListener(
                 (ChannelFuture future) -> {
@@ -538,6 +543,9 @@ public class RestClient implements AutoCloseableAsync {
         return channelFuture
                 .thenComposeAsync(
                         channel -> {
+                            // tips 用来处理HTTP请求和响应的核心组件
+                            //  ClientHandler extends SimpleChannelInboundHandler
+                            //  SimpleChannelInboundHandler封装了Rest endpoints leader检索逻辑，通过channelRead来处理API msg
                             ClientHandler handler = channel.pipeline().get(ClientHandler.class);
 
                             CompletableFuture<JsonResponse> future;
@@ -548,7 +556,9 @@ public class RestClient implements AutoCloseableAsync {
                                     throw new IOException(
                                             "Netty pipeline was not properly initialized.");
                                 } else {
+                                    // tips 将请求数据写入channel
                                     httpRequest.writeTo(channel);
+                                    // tips 接收响应的json结果
                                     future = handler.getJsonFuture();
                                     success = true;
                                 }

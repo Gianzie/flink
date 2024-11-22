@@ -146,6 +146,7 @@ public class SavepointHandlers {
                 throws RestHandlerException {
             final AsynchronousJobOperationKey operationKey = createOperationKey(request);
 
+            // tips enter
             return triggerOperation(request, operationKey, gateway)
                     .handle(
                             (acknowledge, throwable) -> {
@@ -254,6 +255,7 @@ public class SavepointHandlers {
                             : TriggerSavepointMode.SAVEPOINT;
             final String targetDirectory = requestedTargetDirectory.orElse(defaultSavepointDir);
             final SavepointFormatType formatType = request.getRequestBody().getFormatType();
+            // tips 触发sp，跳转到Dispatcher
             return gateway.triggerSavepoint(
                     operationKey, targetDirectory, formatType, savepointMode, RpcUtils.INF_TIMEOUT);
         }
