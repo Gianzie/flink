@@ -789,7 +789,7 @@ public class CliFrontend {
                     activeCommandLine,
                     commandLine,
                     (clusterClient, effectiveConfiguration) ->
-                            // tips 发送消息给JobMaster，触发ck
+                            // tips 通过Netty发送消息给Dispatcher，转发给JobMaster，触发ck
                             triggerSavepoint(
                                     clusterClient,
                                     jobId,

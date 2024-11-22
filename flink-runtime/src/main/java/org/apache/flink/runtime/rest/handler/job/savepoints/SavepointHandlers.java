@@ -146,7 +146,7 @@ public class SavepointHandlers {
                 throws RestHandlerException {
             final AsynchronousJobOperationKey operationKey = createOperationKey(request);
 
-            // tips enter
+            // tips enter SavepointTriggerHandler
             return triggerOperation(request, operationKey, gateway)
                     .handle(
                             (acknowledge, throwable) -> {

@@ -81,6 +81,7 @@ public abstract class LeaderRetrievalHandler<T extends RestfulGateway>
                         gateway -> {
                             try {
                                 // tips Netty的接收端？通过SimpleChannelInboundHandler.channelRead来接收API msg
+                                //  这里查看 AbstractHandler 的重写
                                 respondAsLeader(channelHandlerContext, routedRequest, gateway);
                             } catch (Exception e) {
                                 logger.error("Error while responding to the http request.", e);

@@ -80,7 +80,7 @@ public abstract class AbstractRestHandler<
         CompletableFuture<P> response;
 
         try {
-            // tips 处理HTTP请求
+            // tips 处理HTTP请求，根据handler类型，触发sp这里查看 SavepointHandlerBase
             response = handleRequest(handlerRequest, gateway);
         } catch (RestHandlerException e) {
             response = FutureUtils.completedExceptionally(e);

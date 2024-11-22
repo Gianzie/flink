@@ -557,6 +557,7 @@ public class RestClient implements AutoCloseableAsync {
                                             "Netty pipeline was not properly initialized.");
                                 } else {
                                     // tips 将请求数据写入channel
+                                    //  channel中有了消息后，会被 LeaderRetrievalHandler 处理
                                     httpRequest.writeTo(channel);
                                     // tips 接收响应的json结果
                                     future = handler.getJsonFuture();
