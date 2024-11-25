@@ -78,6 +78,7 @@ public class DefaultCheckpointPlanCalculator implements CheckpointPlanCalculator
                     jobVerticesInTopologyOrder.add(jobVertex);
                     allTasks.addAll(Arrays.asList(jobVertex.getTaskVertices()));
 
+                    // tips 如果是SourceVertex，才可以触发ck，barrier就是由source算子一步步发下去的
                     if (jobVertex.getJobVertex().isInputVertex()) {
                         sourceTasks.addAll(Arrays.asList(jobVertex.getTaskVertices()));
                     }

@@ -812,6 +812,7 @@ public class CheckpointCoordinator {
         // send messages to the tasks to trigger their checkpoints
         // tips 发消息给task来触发他们的ck
         List<CompletableFuture<Acknowledge>> acks = new ArrayList<>();
+        // tips 所有需要触发ck的task（所有SourceTask）
         for (Execution execution : checkpoint.getCheckpointPlan().getTasksToTrigger()) {
             if (request.props.isSynchronous()) {
                 // tips sp

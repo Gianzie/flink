@@ -508,6 +508,7 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
                                 Thread.currentThread().getThreadGroup(), "Checkpoint Timer"));
 
         // create the coordinator that triggers and commits checkpoints and holds the state
+        // tips 构建ExecutionGraph创建的ck协调器，用来管理状态、触发ck并收集ack
         checkpointCoordinator =
                 new CheckpointCoordinator(
                         jobInformation.getJobId(),
@@ -520,6 +521,7 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
                         checkpointsCleaner,
                         new ScheduledExecutorServiceAdapter(checkpointCoordinatorTimer),
                         failureManager,
+                        // tips 创建ck计划，即哪些task要触发ck，哪些task要等待上游传递过来
                         createCheckpointPlanCalculator(
                                 chkConfig.isEnableCheckpointsAfterTasksFinish()),
                         new ExecutionAttemptMappingProvider(getAllExecutionVertices()),
