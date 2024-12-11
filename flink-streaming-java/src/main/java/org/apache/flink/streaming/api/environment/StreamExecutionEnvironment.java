@@ -2027,7 +2027,7 @@ public class StreamExecutionEnvironment implements AutoCloseable {
 
         // tips create DataStreamSource，用来调用后续算子
         //  数据源作为SourceTransformation赋值给DataStream的transformation属性，作为下一个算子的输入
-        //  当后续通过DataStream调用其他算子时，会一并add到StreamExecutionEnvironment的transformations属性中
+        //  当后续通过DataStream调用其他算子时，会作为算子的输入在StreamNode中体现
         return new DataStreamSource<>(
                 this,
                 checkNotNull(source, "source"),
